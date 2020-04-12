@@ -1,0 +1,8 @@
+	9x9 - BFS
+Load Store Summary in thread1:
+Field load:    2741
+Field store:   23
+Regular load:  40021575
+Regular store: 39989362
+-------------------------------------------------
+	9x9 - DFX

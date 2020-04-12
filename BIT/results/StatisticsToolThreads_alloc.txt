@@ -1,0 +1,42 @@
+	9x9 - DLX
+Allocations summary for thread 12:
+new:            1037
+newarray:       60
+anewarray:      5
+multianewarray: 2
+-------------------------------------------------
+	9x9 - BFS
+Allocations summary for thread 12:
+new:            23
+newarray:       0
+anewarray:      2
+multianewarray: 1
+-------------------------------------------------
+	9x9 - CP
+Allocations summary for thread 12:
+new:            141
+newarray:       0
+anewarray:      2
+multianewarray: 1
+-------------------------------------------------
+	16x16 - DLX
+Allocations summary for thread 12:
+new:            3278
+newarray:       203
+anewarray:      3
+multianewarray: 2
+-------------------------------------------------
+	16x16 - BFS
+Allocations summary for thread 12:
+new:            30
+newarray:       0
+anewarray:      2
+multianewarray: 1
+-------------------------------------------------
+	16x16 - CP
+Allocations summary for thread 12:
+new:            670
+newarray:       0
+anewarray:      2
+multianewarray: 1
+-------------------------------------------------

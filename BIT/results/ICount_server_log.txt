@@ -1,0 +1,36 @@
+	9x9 - BFS
+279987735 instructions in thread12
+119984746 basic blocks in thread12
+942 methods in thread12
+942 methods in thread12
+-------------------------------------------------
+	9x9 - DLX
+552853420 instructions in thread13
+234810982 basic blocks in thread13
+3561 methods in thread13
+3561 methods in thread13
+-------------------------------------------------
+	9X9 - CP
+242926600 instructions in thread14
+104102156 basic blocks in thread14
+747 methods in thread14
+747 methods in thread14
+-------------------------------------------------
+	16x16 - BFS
+1087062997 instructions in thread15
+465835099 basic blocks in thread15
+2954 methods in thread15
+2954 methods in thread15
+-------------------------------------------------
+	16x16 - DLX
+1822689644 instructions in thread16
+743248480 basic blocks in thread16
+12911 methods in thread16
+12911 methods in thread16
+-------------------------------------------------
+	16X16 - CP
+1317578258 instructions in thread17
+564621874 basic blocks in thread17
+2716 methods in thread17
+2716 methods in thread17
+-------------------------------------------------

@@ -1,0 +1,54 @@
+	9x9 - DLX
+Dynamic information summary thread 12:
+Number of methods:      3579
+Number of basic blocks: 234811030
+Number of instructions: 552853689
+Average number of instructions per basic block: 2.3544624
+Average number of instructions per method:      154471.56
+Average number of basic blocks per method:      65608.0
+-------------------------------------------------
+	9x9 - BFS
+Dynamic information summary thread 12:
+Number of methods:      942
+Number of basic blocks: 119984746
+Number of instructions: 279987735
+Average number of instructions per basic block: 2.3335278
+Average number of instructions per method:      297226.9
+Average number of basic blocks per method:      127372.336
+-------------------------------------------------
+	9x9 - CP
+Dynamic information summary thread 12:
+Number of methods:      747
+Number of basic blocks: 104102156
+Number of instructions: 242926600
+Average number of instructions per basic block: 2.3335404
+Average number of instructions per method:      325202.94
+Average number of basic blocks per method:      139360.33
+-------------------------------------------------
+	16x16 - DLX
+Dynamic information summary thread 13:
+Number of methods:      12911
+Number of basic blocks: 743248480
+Number of instructions: 1822689644
+Average number of instructions per basic block: 2.4523287
+Average number of instructions per method:      141173.39
+Average number of basic blocks per method:      57567.074
+-------------------------------------------------
+	16x16 - BFS
+Dynamic information summary thread 14:
+Number of methods:      2954
+Number of basic blocks: 465835099
+Number of instructions: 1087062997
+Average number of instructions per basic block: 2.333579
+Average number of instructions per method:      367996.97
+Average number of basic blocks per method:      157696.38
+-------------------------------------------------
+	16x16 - CP
+Dynamic information summary thread 15:
+Number of methods:      2716
+Number of basic blocks: 564621874
+Number of instructions: 1317578258
+Average number of instructions per basic block: 2.3335586
+Average number of instructions per method:      485117.2
+Average number of basic blocks per method:      207887.3
+-------------------------------------------------
