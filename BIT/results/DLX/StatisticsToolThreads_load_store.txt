@@ -1,0 +1,93 @@
+	9x9 - BFS
+Load Store Summary in thread1:
+Field load:    2741
+Field store:   23
+Regular load:  40021575
+Regular store: 39989362
+-------------------------------------------------
+		DFX
+-------------------------------------------------
+		9x9_101
+Load Store Summary in thread12:
+Field load:    319990
+Field store:   10520
+Regular load:  81579230
+Regular store: 78483273
+-------------------------------------------------
+		9x9_102
+Load Store Summary in thread13:
+Field load:    320178
+Field store:   10601
+Regular load:  81579541
+Regular store: 78483339
+-------------------------------------------------
+		9x9_103
+Load Store Summary in thread14:
+Field load:    320540
+Field store:   10789
+Regular load:  81580281
+Regular store: 78483490
+-------------------------------------------------
+		9x9_104
+Load Store Summary in thread14:
+Field load:    319718
+Field store:   21155
+Regular load:  81578608
+Regular store: 78483146
+-------------------------------------------------
+		9x9_105
+Load Store Summary in thread15:
+Field load:    320362
+Field store:   10695
+Regular load:  81579915
+Regular store: 78483417
+-------------------------------------------------
+		16x16_01
+Load Store Summary in thread16:
+Field load:    4912704
+Field store:   34296
+Regular load:  306460444
+Regular store: 251873797
+-------------------------------------------------
+		16x16_02
+Load Store Summary in thread16:
+Field load:    4913308
+Field store:   68874
+Regular load:  306461485
+Regular store: 251873939
+-------------------------------------------------
+		16x16_03
+Load Store Summary in thread16:
+Field load:    4912690
+Field store:   103170
+Regular load:  306460293
+Regular store: 251873650
+-------------------------------------------------
+		16x16_04
+Load Store Summary in thread16:
+Field load:    4912320
+Field store:   137278
+Regular load:  306459562
+Regular store: 251873512
+-------------------------------------------------
+		16x16_05
+Load Store Summary in thread16:
+Field load:    39148005
+Field store:   196338
+Regular load:  634526918
+Regular store: 128645582
+-------------------------------------------------
+		16x16_06
+Load Store Summary in thread16:
+Field load:    43129146
+Field store:   277739
+Regular load:  1190029934
+Regular store: 680765684
+-------------------------------------------------
+		25x25
+Load Store Summary in thread16:
+Field load:    43129146
+Field store:   359140
+Regular load:  1190029934
+Regular store: 680765684
+-------------------------------------------------

@@ -1,0 +1,62 @@
+		DLX
+-------------------------------------------------
+		25x25
+1020637170 instructions in thread12
+1922791315 basic blocks in thread12
+36783 methods in thread12
+-------------------------------------------------
+		16x16_06 -> 25x25
+1020636901 instructions in thread13
+1922791267 basic blocks in thread13
+36765 methods in thread13
+-------------------------------------------------
+		16x16_05 -> 25x25
+1444872387 instructions in thread14
+267142575 basic blocks in thread14
+28630 methods in thread14
+-------------------------------------------------
+		16x16_04
+1822687184 instructions in thread15
+743248039 basic blocks in thread15
+12895 methods in thread15
+-------------------------------------------------
+		16x16_03
+1822689186 instructions in thread16
+743248330 basic blocks in thread16
+12911 methods in thread16
+-------------------------------------------------
+		16x16_02
+1822692495 instructions in thread17
+743248856 basic blocks in thread17
+12935 methods in thread17
+-------------------------------------------------
+		16x16_01
+1822689644 instructions in thread18
+743248480 basic blocks in thread18
+12911 methods in thread18
+-------------------------------------------------
+		9x9_105
+552855483 instructions in thread19
+234811293 basic blocks in thread19
+3577 methods in thread19
+-------------------------------------------------
+		9x9_104
+552851898 instructions in thread20
+234810756 basic blocks in thread20
+3549 methods in thread20
+-------------------------------------------------
+		9x9_103
+552856482 instructions in thread21
+234811439 basic blocks in thread21
+3585 methods in thread21
+-------------------------------------------------
+		9x9_102
+552854457 instructions in thread22
+234811139 basic blocks in thread22
+3569 methods in thread22
+-------------------------------------------------
+		9x9_101
+552853420 instructions in thread22
+234810982 basic blocks in thread22
+3561 methods in thread22
+-------------------------------------------------
