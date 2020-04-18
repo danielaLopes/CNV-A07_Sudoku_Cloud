@@ -33,19 +33,6 @@ public class WebServer {
 
 		//final HttpServer server = HttpServer.create(new InetSocketAddress(8000), 0);
 
-		// prepares files to read metrics
-		try {
-			File myObj = new File("requests_instrumentation.txt");
-			if (myObj.createNewFile()) {
-				System.out.println("File created: " + myObj.getName());
-			} else {
-				System.out.println("File already exists.");
-			}
-		} catch (IOException e) {
-			System.out.println("An error occurred.");
-			e.printStackTrace();
-		}
-
 		server.createContext("/sudoku", new MyHandler());
 
 		// be aware! infinite pool of threads!
