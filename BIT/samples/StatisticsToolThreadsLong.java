@@ -27,7 +27,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Vector;
 
-public class StatisticsToolThreads
+public class StatisticsToolThreadsLong
 {
     private static Map<Long, Long> dyn_method_count = new HashMap<>();
     private static Map<Long, Long> dyn_bb_count = new HashMap<>();
@@ -130,15 +130,15 @@ public class StatisticsToolThreads
                 ClassInfo ci = new ClassInfo(in_filename);
                 for (Enumeration e = ci.getRoutines().elements(); e.hasMoreElements(); ) {
                     Routine routine = (Routine) e.nextElement();
-                    routine.addBefore("StatisticsToolThreads", "dynMethodCount", new Integer(1));
+                    routine.addBefore("StatisticsToolThreadsLong", "dynMethodCount", new Integer(1));
 
                     for (Enumeration b = routine.getBasicBlocks().elements(); b.hasMoreElements(); ) {
                         BasicBlock bb = (BasicBlock) b.nextElement();
-                        bb.addBefore("StatisticsToolThreads", "dynInstrCount", new Integer(bb.size()));
+                        bb.addBefore("StatisticsToolThreadsLong", "dynInstrCount", new Integer(bb.size()));
                     }
                     if (routine.getMethodName().equals("solveSudoku")) {
                         //System.out.println("Last element!");
-                        routine.addAfter("StatisticsToolThreads", "printDynamic", ci.getClassName());
+                        routine.addAfter("StatisticsToolThreadsLong", "printDynamic", ci.getClassName());
                     }
                 }
                 //ci.addAfter("StatisticsToolsThreads", "printDynamic", "null");
@@ -152,7 +152,7 @@ public class StatisticsToolThreads
         Long currentThreadId = Thread.currentThread().getId();
 
         try {
-            FileWriter myWriter = new FileWriter("/Users/franciscomatos/Desktop/cnv-sudoku-2/instrumentation/log.txt", true);
+            FileWriter myWriter = new FileWriter("log.txt", true);
 
             Long current_dyn_method_count = dyn_method_count.get(currentThreadId);
             Long current_dyn_bb_count = dyn_bb_count.get(currentThreadId);
@@ -237,15 +237,15 @@ public class StatisticsToolThreads
                                 (opcode==InstructionTable.newarray) ||
                                 (opcode==InstructionTable.anewarray) ||
                                 (opcode==InstructionTable.multianewarray)) {
-                            instr.addBefore("StatisticsToolThreads", "allocCount", new Integer(opcode));
+                            instr.addBefore("StatisticsToolThreadsLong", "allocCount", new Integer(opcode));
                         }
                     }
                     if (routine.getMethodName().equals("solveSudoku")) {
                         System.out.println("Last element!");
-                        routine.addAfter("StatisticsToolThreads", "printAlloc", ci.getClassName());
+                        routine.addAfter("StatisticsToolThreadsLong", "printAlloc", ci.getClassName());
                     }
                 }
-                //ci.addAfter("StatisticsToolThreads", "printAlloc", "null");
+                //ci.addAfter("StatisticsToolThreadsLong", "printAlloc", "null");
                 ci.write(out_filename);
             }
         }
@@ -255,7 +255,7 @@ public class StatisticsToolThreads
     {
         long currentThreadId = Thread.currentThread().getId();
         try {
-            FileWriter myWriter = new FileWriter("/Users/franciscomatos/Desktop/cnv-sudoku-2/instrumentation/log.txt", true);
+            FileWriter myWriter = new FileWriter("log.txt",true);
 
             // print results and put counters back to zero
             myWriter.write("Allocations summary for thread " + currentThreadId + ":\n");
@@ -340,24 +340,24 @@ public class StatisticsToolThreads
                         Instruction instr = (Instruction) instrs.nextElement();
                         int opcode=instr.getOpcode();
                         if (opcode == InstructionTable.getfield)
-                            instr.addBefore("StatisticsToolThreads", "LSFieldCount", new Integer(0));
+                            instr.addBefore("StatisticsToolThreadsLong", "LSFieldCount", new Integer(0));
                         else if (opcode == InstructionTable.putfield)
-                            instr.addBefore("StatisticsToolThreads", "LSFieldCount", new Integer(1));
+                            instr.addBefore("StatisticsToolThreadsLong", "LSFieldCount", new Integer(1));
                         else {
                             short instr_type = InstructionTable.InstructionTypeTable[opcode];
                             if (instr_type == InstructionTable.LOAD_INSTRUCTION) {
-                                instr.addBefore("StatisticsToolThreads", "LSCount", new Integer(0));
+                                instr.addBefore("StatisticsToolThreadsLong", "LSCount", new Integer(0));
                             } else if (instr_type == InstructionTable.STORE_INSTRUCTION) {
-                                instr.addBefore("StatisticsToolThreads", "LSCount", new Integer(1));
+                                instr.addBefore("StatisticsToolThreadsLong", "LSCount", new Integer(1));
                             }
                         }
                     }
                     if (routine.getMethodName().equals("solveSudoku")) {
                         //System.out.println("Last element!");
-                        routine.addAfter("StatisticsToolThreads", "printLoadStore", ci.getClassName());
+                        routine.addAfter("StatisticsToolThreadsLong", "printLoadStore", ci.getClassName());
                     }
                 }
-                //ci.addAfter("StatisticsToolThreads", "printLoadStore", "null");
+                //ci.addAfter("StatisticsToolThreadsLong", "printLoadStore", "null");
                 ci.write(out_filename);
             }
         }
@@ -367,7 +367,7 @@ public class StatisticsToolThreads
     {
         Long currentThreadId = Thread.currentThread().getId();
         try {
-            FileWriter myWriter = new FileWriter("/Users/franciscomatos/Desktop/cnv-sudoku-2/instrumentation/log.txt", true);
+            FileWriter myWriter = new FileWriter("log_load_store.txt", true);
 
             // print results and put counters back to zero
             myWriter.write("Load Store Summary in thread" + currentThreadId + ":\n");
@@ -375,7 +375,7 @@ public class StatisticsToolThreads
             fieldloadcount.put(currentThreadId, 0l);
 
             myWriter.write("Field store:   " + fieldstorecount.get(currentThreadId) + "\n");
-            fieldloadcount.put(currentThreadId, 0l);
+            fieldstorecount.put(currentThreadId, 0l);
 
             myWriter.write("Regular load:  " + loadcount.get(currentThreadId) + "\n");
             loadcount.put(currentThreadId, 0l);
@@ -462,27 +462,27 @@ public class StatisticsToolThreads
 
                 for (Enumeration e = ci.getRoutines().elements(); e.hasMoreElements(); ) {
                     Routine routine = (Routine) e.nextElement();
-                    routine.addBefore("StatisticsToolThreads", "setBranchMethodName", routine.getMethodName());
+                    routine.addBefore("StatisticsToolThreadsLong", "setBranchMethodName", routine.getMethodName());
                     InstructionArray instructions = routine.getInstructionArray();
                     for (Enumeration b = routine.getBasicBlocks().elements(); b.hasMoreElements(); ) {
                         BasicBlock bb = (BasicBlock) b.nextElement();
                         Instruction instr = (Instruction) instructions.elementAt(bb.getEndAddress());
                         short instr_type = InstructionTable.InstructionTypeTable[instr.getOpcode()];
                         if (instr_type == InstructionTable.CONDITIONAL_INSTRUCTION) {
-                            instr.addBefore("StatisticsToolThreads", "setBranchPC", new Integer(instr.getOffset()));
-                            instr.addBefore("StatisticsToolThreads", "updateBranchNumber", new Integer(k));
-                            instr.addBefore("StatisticsToolThreads", "updateBranchOutcome", "BranchOutcome");
+                            instr.addBefore("StatisticsToolThreadsLong", "setBranchPC", new Integer(instr.getOffset()));
+                            instr.addBefore("StatisticsToolThreadsLong", "updateBranchNumber", new Integer(k));
+                            instr.addBefore("StatisticsToolThreadsLong", "updateBranchOutcome", "BranchOutcome");
                             k++;
                         }
                     }
                     if (routine.getMethodName().equals("solveSudoku")) {
                         //System.out.println("Last element!");
-                        routine.addAfter("StatisticsToolThreads", "printBranch", ci.getClassName());
+                        routine.addAfter("StatisticsToolThreadsLong", "printBranch", ci.getClassName());
                     }
                 }
-                ci.addBefore("StatisticsToolThreads", "setBranchClassName", ci.getClassName());
-                ci.addBefore("StatisticsToolThreads", "branchInit", new Integer(total));
-                //ci.addAfter("StatisticsToolThreads", "printBranch", "null");
+                ci.addBefore("StatisticsToolThreadsLong", "setBranchClassName", ci.getClassName());
+                ci.addBefore("StatisticsToolThreadsLong", "branchInit", new Integer(total));
+                //ci.addAfter("StatisticsToolThreadsLong", "printBranch", "null");
                 ci.write(out_filename);
             }
         }
@@ -547,7 +547,7 @@ public class StatisticsToolThreads
 
         try {
             File myObj = new File(
-                "/Users/franciscomatos/Desktop/cnv-sudoku-2/instrumentation/log.txt");
+                    "log_load_store.txt");
             if (myObj.createNewFile()) {
                 System.out.println("File created: " + myObj.getName());
             } else {
