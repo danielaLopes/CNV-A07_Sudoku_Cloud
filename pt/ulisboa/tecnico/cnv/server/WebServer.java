@@ -23,7 +23,7 @@ public class WebServer {
 		final HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 8000), 0);
 
 		//final HttpServer server = HttpServer.create(new InetSocketAddress(8000), 0);
-
+		server.createContext("/ping", new MyPingHandler());
 		server.createContext("/sudoku", new MyHandler());
 
 		// be aware! infinite pool of threads!
@@ -32,6 +32,7 @@ public class WebServer {
 
 		System.out.println(server.getAddress().toString());
 	}
+
 
 	public static String parseRequestBody(InputStream is) throws IOException {
         InputStreamReader isr =  new InputStreamReader(is,"utf-8");
@@ -50,7 +51,20 @@ public class WebServer {
         isr.close();
 
         return buf.toString();
-    }
+	}
+	
+	static class MyPingHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange t) throws IOException {
+            String response = "This was the query:" + t.getRequestURI().getQuery() 
+                               + "##";
+            t.sendResponseHeaders(200, response.length());
+            OutputStream os = t.getResponseBody();
+            os.write(response.getBytes());
+            os.close();
+        }
+	}
+	
 	static class MyHandler implements HttpHandler {
 		@Override
 		public void handle(final HttpExchange t) throws IOException {
