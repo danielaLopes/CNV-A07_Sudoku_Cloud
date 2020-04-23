@@ -9,7 +9,7 @@ import java.util.concurrent.ConcurrentMap;
 
 public class MetricsTool {
 
-    private static ConcurrentMap<Long, Long> methodCount = new ConcurrentHashMap<>();
+    private static Map<Long, Long> fieldloadcount = new HashMap<>();
 
     public static void printUsage()
     {
@@ -34,7 +34,13 @@ public class MetricsTool {
 
                 for (Enumeration e = ci.getRoutines().elements(); e.hasMoreElements(); ) {
                     Routine routine = (Routine) e.nextElement();
-                    routine.addBefore("BIT/serverMetrics/MetricsTool", "methodCount", new Integer(1));
+
+                    for (Enumeration instrs = (routine.getInstructionArray()).elements(); instrs.hasMoreElements(); ) {
+                        Instruction instr = (Instruction) instrs.nextElement();
+                        int opcode = instr.getOpcode();
+                        if (opcode == InstructionTable.getfield)
+                            instr.addBefore("BIT/serverMetrics/MetricsTool", "count", new Integer(0));
+                    }
                 }
                 ci.write(out_filename);
             }
@@ -44,20 +50,20 @@ public class MetricsTool {
     public static synchronized void printToFile(String query)
     {
         Long currentThreadId = Thread.currentThread().getId();
-        Long current_method_count = methodCount.get(currentThreadId);
+        Long current_field_load_count = fieldloadcount.get(currentThreadId);
         resetCount(currentThreadId);
 
         File directory = new File("logs/");
         if (! directory.exists()){
             directory.mkdir();
         }
-        //new File("logs/serverMetrics.csv");
+        
         try {
             FileWriter fileWriter = new FileWriter("logs/serverMetrics.txt", true);
             BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
             PrintWriter out = new PrintWriter(bufferedWriter);
             out.println("Query: " + query);
-            out.println("Number of methods: " + current_method_count);
+            out.println("Number of field load: " + current_field_load_count);
             out.println("-------------------------------------------");
             out.close();
             bufferedWriter.close();
@@ -71,17 +77,17 @@ public class MetricsTool {
 
     public static void resetCount(long currentThreadId)
     {
-        methodCount.put(currentThreadId, 0L);
+        fieldloadcount.put(currentThreadId, 0L);
     }
 
-    public static synchronized void methodCount(int incr)
+    public static synchronized void count(int incr)
     {
         Long currentThreadId = Thread.currentThread().getId();
 
-        Long current_method_count = methodCount.get(currentThreadId);
-        if (current_method_count == null) current_method_count  = 0l;
+        Long current_field_load_count = fieldloadcount.get(currentThreadId);
+        if (current_field_load_count == null) current_field_load_count  = 0l;
 
-        methodCount.put(currentThreadId, current_method_count  + 1);
+        fieldloadcount.put(currentThreadId, current_field_load_count  + 1);
     }
 
     public static void main(String argv[])
