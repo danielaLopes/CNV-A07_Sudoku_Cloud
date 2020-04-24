@@ -9,6 +9,7 @@ Step-by-step configuration of the AWS Load Balancer and Auto Scaler, assuming th
 * Enable advanced VPC configuration.
 
 * Listener Configuration:
+
 Load Balancer Protocol | Load Balancer Port | Instance Protocol | Instance Port
 ---------------------- | ------------------ | ----------------- | -------------
 HTTP | 80 | HTTP | 8000
