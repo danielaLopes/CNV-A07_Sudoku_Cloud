@@ -40,7 +40,7 @@ public class MetricsTool {
                         Instruction instr = (Instruction) instrs.nextElement();
                         int opcode = instr.getOpcode();
                         if (opcode == InstructionTable.getfield)
-                            instr.addBefore("BIT/serverMetrics/MetricsTool", "count", new Integer(0));
+                            instr.addBefore("MetricsTool", "count", new Integer(0));
                     }
                 }
                 ci.write(out_filename);
@@ -54,13 +54,13 @@ public class MetricsTool {
         Long current_field_load_count = fieldloadcount.get(currentThreadId);
         resetCount(currentThreadId);
 
-        File directory = new File("logs/");
+        File directory = new File("/home/ec2-user/logs/");
         if (! directory.exists()){
             directory.mkdir();
         }
         
         try {
-            FileWriter fileWriter = new FileWriter("logs/serverMetrics.txt", true);
+            FileWriter fileWriter = new FileWriter("/home/ec2-user/logs/serverMetrics.txt", true);
             BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
             PrintWriter out = new PrintWriter(bufferedWriter);
             out.println("Query: " + query);
