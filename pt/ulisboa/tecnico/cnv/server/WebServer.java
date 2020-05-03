@@ -135,7 +135,9 @@ public class WebServer {
 
 			System.out.println("> Sent response to " + t.getRemoteAddress().toString());
 
-			MetricsTool.printToFile(query);
+			//MetricsTool.printToFile(query);
+			MetricsTool.insertDynamo(query);
+			System.out.println("inserted data to dynamo");
 		}
 	}
 }
