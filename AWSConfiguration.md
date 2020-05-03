@@ -1,6 +1,6 @@
 # AWS Configuration
 
-Step-by-step configuration of the AWS Load Balancer and Auto Scaler, assuming the AMI is lready configuring. 
+Step-by-step configuration of the AWS Load Balancer and Auto Scaler, assuming the AMI is already configured. 
 
 ## Load Balancer
 
