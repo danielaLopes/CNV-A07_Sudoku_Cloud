@@ -16,28 +16,16 @@ import java.util.logging.Logger;
 
 public class LoadBalancerHandler implements HttpHandler {
 
-    private static Logger logger = Logger.getLogger(LoadBalancerHandler.class.getName());
+    private static Logger _logger = Logger.getLogger(LoadBalancerHandler.class.getName());
 
     @Override
     public void handle(final HttpExchange t) throws IOException {
 
-        logger.info("Handling new request");
+        _logger.info("Handling new request");
 
         // Get the query.
         final String query = t.getRequestURI().getQuery();
-        logger.info("> Query:\t" + query);
-
-        // Break it down into String[].
-        final String[] params = query.split("&");
-
-        final ArrayList<String> newArgs = new ArrayList<>();
-
-        // Store as if it was a direct call to SolverMain.
-        for (final String p : params) {
-            final String[] splitParam = p.split("=");
-            newArgs.add("-" + splitParam[0]);
-            newArgs.add(splitParam[1]);
-        }
+        _logger.info("> Query:\t" + query);
 
         byte[] solution;
 
@@ -62,7 +50,10 @@ public class LoadBalancerHandler implements HttpHandler {
             // Do this asynchronously ?? timeout??
             //solution = instance.solveSudoku();*/
             String requestUuid = generateRequestUuid();
-            RequestState requestState = new RequestState();
+            // TODO: these are dummy values
+            String instanceId = "instance x";
+            int expectedTime = 3000;
+            RequestState requestState = new RequestState(t, query, instanceId, expectedTime);
             // TODO: see what's best: have a unique id for each request
             // TODO: or map it with the query so that we don't repeat equivalent
             // TODO: requests and avoid overloading servers
