@@ -66,7 +66,7 @@ public class MetricsTool {
                         Instruction instr = (Instruction) instrs.nextElement();
                         int opcode = instr.getOpcode();
                         if (opcode == InstructionTable.getfield)
-                            instr.addBefore("MetricsTool", "count", new Integer(0));
+                            instr.addBefore("BIT/serverMetrics/MetricsTool", "count", new Integer(0));
                     }
                 }
                 ci.write(out_filename);

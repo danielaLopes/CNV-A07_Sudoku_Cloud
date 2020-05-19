@@ -48,7 +48,8 @@ public class LoadBalancerHandler implements HttpHandler {
             else {*/
         // Estimate request cost
         // RequestCostEstimator contains pre loaded data to help estimate the cost of a request
-        RequestCost cost = RequestCostEstimator.estimateCost(query);
+        RequestCostEstimator costEstimator = RequestCostEstimator.getInstance();
+        RequestCost cost = costEstimator.estimateCost(query);
         // Choose instance to solve sudoku based on the estimated cost of the request
         // default is choosing always instance with less CPU -> this leads to more machines running at less CPU
         // should we estimate %CPU based on the cost of a request
