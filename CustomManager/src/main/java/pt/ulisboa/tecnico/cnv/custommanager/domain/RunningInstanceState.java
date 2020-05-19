@@ -5,18 +5,27 @@ import java.util.concurrent.ConcurrentHashMap;
 public class RunningInstanceState {
 
     // Keeps track of all requests currently being processed by this instance
-    ConcurrentHashMap<String, String> _processingRequests = new ConcurrentHashMap<>();
+    // Maps each request to the corresponding request cost
+    ConcurrentHashMap<String, RequestCost> _processingRequests = new ConcurrentHashMap<>();
 
     public RunningInstanceState() {
 
     }
 
     // TODO: query or uuid?
-    public void addNewRequest(String query) {
-        _processingRequests.put(query, query);
+    public void addNewRequest(String query, RequestCost cost) {
+        _processingRequests.put(query, cost);
     }
 
     public void removeRequest(String query) {
         _processingRequests.remove(query);
+    }
+
+    public int calculateRequestCostSum() {
+        int totalEstimatedCost = 0;
+        for (RequestCost cost : _processingRequests.values()) {
+            totalEstimatedCost += cost.getCost();
+        }
+        return totalEstimatedCost;
     }
 }
