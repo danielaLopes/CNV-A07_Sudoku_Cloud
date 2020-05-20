@@ -3,6 +3,8 @@ package pt.ulisboa.tecnico.cnv.custommanager.handler;
 import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
+import pt.ulisboa.tecnico.cnv.custommanager.service.RecentRequestsCache;
+import pt.ulisboa.tecnico.cnv.custommanager.service.RequestTracker;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -19,37 +21,25 @@ public class ResponseHandler implements HttpHandler {
 
         logger.info("Handling response to request");
 
+        // Get the query.
+        final String query = t.getRequestURI().getQuery();
+
         byte[] solution;
 
         solution = "ola".getBytes();
 
+        // TODO: solution and query should come in t
         //solution = instance.solveSudoku();
         //}
 
+        //String query = "ola";
+
+        RecentRequestsCache.getInstance().add(query, solution);
+
+        // TODO: find a way to get the requestUuid and replace it in query
+        RequestTracker.getInstance().remove(query);
+
         // Send response to browser.
-        final Headers hdrs = t.getResponseHeaders();
 
-        //t.sendResponseHeaders(200, responseFile.length());
-
-        ///hdrs.add("Content-Type", "image/png");
-        hdrs.add("Content-Type", "application/json");
-
-        hdrs.add("Access-Control-Allow-Origin", "*");
-
-        hdrs.add("Access-Control-Allow-Credentials", "true");
-        hdrs.add("Access-Control-Allow-Methods", "POST, GET, HEAD, OPTIONS");
-        hdrs.add("Access-Control-Allow-Headers", "Origin, Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers");
-
-        t.sendResponseHeaders(200, solution.toString().length());
-
-        final OutputStream os = t.getResponseBody();
-        OutputStreamWriter osw = new OutputStreamWriter(os, "UTF-8");
-        osw.write(solution.toString());
-        osw.flush();
-        osw.close();
-
-        os.close();
-
-        System.out.println("> Sent response to " + t.getRemoteAddress().toString());
     }
 }
