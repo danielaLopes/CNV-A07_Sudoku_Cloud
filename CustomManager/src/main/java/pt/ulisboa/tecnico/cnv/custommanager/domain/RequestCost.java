@@ -2,13 +2,18 @@ package pt.ulisboa.tecnico.cnv.custommanager.domain;
 
 public class RequestCost {
 
-    public int _cost;
+  private Long fieldLoads;
 
-    public  RequestCost(int cost) {
-        _cost = cost;
-    }
+  public RequestCost(Long fieldLoads) {
+      this.fieldLoads = fieldLoads;
+  }
 
-    public int getCost() {
-        return _cost;
-    }
+  public void setFieldLoads(Long fieldLoads) {
+      this.fieldLoads = fieldLoads;
+  }
+
+  public Long getFieldLoads() {
+      return fieldLoads;
+  }
+
 }
