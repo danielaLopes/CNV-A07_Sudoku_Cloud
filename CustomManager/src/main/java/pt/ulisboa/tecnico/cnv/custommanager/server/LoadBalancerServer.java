@@ -21,6 +21,7 @@ public class LoadBalancerServer {
 
     private static Logger _logger = Logger.getLogger(InstanceSelector.class.getName());
 
+    // TODO: change this
     private static final int HEALTH_CHECK_GRACE_PERIOD = 3;
 
     public static LoadBalancerServer getInstance() {
@@ -59,12 +60,14 @@ public class LoadBalancerServer {
         // TODO: change period to 5
         scheduler.scheduleAtFixedRate(new HealthChecker(), HEALTH_CHECK_GRACE_PERIOD, 5, TimeUnit.SECONDS);
 
+        // shutdown everything when LoadBalancer goes down
         Runtime.getRuntime().addShutdownHook(new Shutdown());
 
         System.out.println(server.getAddress().toString());
 
         gatherAllInstancesTest();
-        //startInstanceTest();
+        startInstanceTest();
+        startInstanceTest();
         //Thread.sleep(1000); // sleeps for 10 seconds
         //shutdownInstanceTest();
         //terminateInstanceTest();
@@ -97,7 +100,7 @@ public class LoadBalancerServer {
         solution = RecentRequestsCache.getInstance().get(query);
         if (solution != null) {
             try {
-                SendResponses.getInstance().sendClientResponse(t, solution);
+                SendMessages.getInstance().sendClientResponse(t, solution);
             }
             catch(IOException e) {
                 _logger.warning(e.getMessage());

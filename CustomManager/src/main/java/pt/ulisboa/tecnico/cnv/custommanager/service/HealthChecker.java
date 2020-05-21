@@ -1,5 +1,8 @@
 package pt.ulisboa.tecnico.cnv.custommanager.service;
 
+import com.amazonaws.services.ec2.model.Instance;
+
+import java.util.List;
 import java.util.logging.Logger;
 
 public class HealthChecker implements Runnable {
@@ -11,9 +14,9 @@ public class HealthChecker implements Runnable {
         _logger.info("Running health checking...");
 
         // loops through all instances to healthcheck
-    }
-
-    public void ping() {
-
+        List<Instance> runningInstances = InstanceSelector.getInstance().getRunningInstances();
+        for (Instance instance : runningInstances) {
+            SendMessages.getInstance().sendHealthCheck(instance, );
+        }
     }
 }

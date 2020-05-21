@@ -84,6 +84,14 @@ public class InstanceSelector {
         return _runningInstances.get(instanceId);
     }
 
+    public List<Instance> getRunningInstances() {
+        List<Instance> instances = new ArrayList<>();
+        for (String instanceId : _runningInstances.keySet()) {
+            instances.add(_instances.get(instanceId));
+        }
+        return instances;
+    }
+
     // -------------------------------------------------------------
     // -----            Methods to manage instances            -----
     // -------------------------------------------------------------
@@ -137,7 +145,7 @@ public class InstanceSelector {
 
         RunInstancesRequest runInstancesRequest = new RunInstancesRequest();
 
-        runInstancesRequest.withImageId("ami-07605abcbabe8e9a7")
+        runInstancesRequest.withImageId("ami-09fe936ae4a44698e")
                             .withMinCount(n)
                             .withMaxCount(n)
                             .withKeyName("CNV")

@@ -1,24 +1,30 @@
 package pt.ulisboa.tecnico.cnv.custommanager.service;
 
+import com.amazonaws.services.ec2.model.Instance;
 import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
 
+import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
+import java.net.HttpURLConnection;
+import java.net.URL;
 
-public class SendResponses {
+public class SendMessages {
 
-    private static SendResponses _instance = null;
+    private static SendMessages _instance = null;
 
-    public static SendResponses getInstance() {
+    private static final int CONNECTION_TIMEOUT = 6000;
+
+    public static SendMessages getInstance() {
         if (_instance == null) {
-            _instance = new SendResponses();
+            _instance = new SendMessages();
         }
         return _instance;
     }
 
-    private SendResponses() {}
+    private SendMessages() {}
 
     public static void sendClientResponse(final HttpExchange t, byte[] solution) throws IOException {
 
@@ -46,5 +52,37 @@ public class SendResponses {
         os.close();
 
         System.out.println("> Sent response to " + t.getRemoteAddress().toString());
+    }
+
+    public static int sendHealthCheck(Instance instance, String request) throws Exception {
+
+        HttpURLConnection connection = null;
+
+        String urlString = "http://" + instance.getPublicIpAddress() + ":8000/ping?" + request;
+
+        URL url = new URL(urlString);
+        connection = (HttpURLConnection) url.openConnection();
+        connection.setRequestMethod("GET");
+
+        /*connection.setUseCaches(false);
+        connection.setDoInput(true);
+
+        connection.setReadTimeout(1000*60*15);*/
+        connection.setConnectTimeout(CONNECTION_TIMEOUT);
+
+        //Get Response
+        DataInputStream is = new DataInputStream((connection.getInputStream()));
+
+        byte[] buffer = new byte[connection.getContentLength()];
+        is.readFully(buffer);
+
+
+        if (connection != null) {
+            connection.disconnect();
+        }
+
+        int code = connection.getResponseCode();
+
+        return code;
     }
 }
