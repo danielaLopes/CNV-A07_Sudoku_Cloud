@@ -54,11 +54,13 @@ public class SendMessages {
         System.out.println("> Sent response to " + t.getRemoteAddress().toString());
     }
 
-    public static int sendHealthCheck(Instance instance, String request) throws Exception {
+    //public static int sendHealthCheck(Instance instance, String request) throws Exception {
+    public static int sendHealthCheck(Instance instance) throws Exception {
 
         HttpURLConnection connection = null;
 
-        String urlString = "http://" + instance.getPublicIpAddress() + ":8000/ping?" + request;
+        //String urlString = "http://" + instance.getPublicIpAddress() + ":8000/ping?" + request;
+        String urlString = "http://" + instance.getPublicIpAddress() + ":8000/ping";
 
         URL url = new URL(urlString);
         connection = (HttpURLConnection) url.openConnection();

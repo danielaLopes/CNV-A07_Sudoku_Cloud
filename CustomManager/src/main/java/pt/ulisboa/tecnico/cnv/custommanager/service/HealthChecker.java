@@ -16,7 +16,19 @@ public class HealthChecker implements Runnable {
         // loops through all instances to healthcheck
         List<Instance> runningInstances = InstanceSelector.getInstance().getRunningInstances();
         for (Instance instance : runningInstances) {
-            SendMessages.getInstance().sendHealthCheck(instance, );
+            try {
+                int code = SendMessages.getInstance().sendHealthCheck(instance);
+                if (code == 200) {
+                    _logger.info("Instance is healthy!");
+                }
+                else {
+                    _logger.warning("Instance is not healthy!");
+                }
+            }
+            catch(Exception e) {
+                _logger.warning("Failed to send healthcheck to " + instance.getInstanceId());
+            }
+            
         }
     }
 }

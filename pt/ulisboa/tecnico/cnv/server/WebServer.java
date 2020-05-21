@@ -73,43 +73,44 @@ public class WebServer {
 			final String query = t.getRequestURI().getQuery();
 			System.out.println("> Query:\t" + query);
 
-			// Break it down into String[].
-			final String[] params = query.split("&");
-
-			final ArrayList<String> newArgs = new ArrayList<>();
-
-			// Store as if it was a direct call to SolverMain.
-			for (final String p : params) {
-				final String[] splitParam = p.split("=");
-				newArgs.add("-" + splitParam[0]);
-				newArgs.add(splitParam[1]);
-			}
-
-			newArgs.add("-b");
-			newArgs.add(parseRequestBody(t.getRequestBody()));
-
-			newArgs.add("-d");
-
-			// Store from ArrayList into regular String[].
-			final String[] args = new String[newArgs.size()];
-			int i = 0;
-			for(String arg: newArgs) {
-				args[i] = arg;
-				i++;
-			}
-
 			// Send response to LoadBalancer confirming it received the request.
-			sendResponseHeaders(t, solution.toString().length());
+			sendResponseHeaders(t, 1);
 
 			System.out.println("> Sent request confirmation to " + t.getRemoteAddress().toString());
 
+			solveRequestAsync(t, query);
+
 			//MetricsTool.printToFile(query);
-			MetricsTool.insertDynamo(query);
+			//MetricsTool.insertDynamo(query);
 			System.out.println("inserted data to dynamo");
 		}
 	}
 
-	public static void solveRequestAsync(final HttpExchange t) {
+	public static void solveRequestAsync(final HttpExchange t, String query) throws IOException, UnsupportedEncodingException {
+
+		// Break it down into String[].
+		final String[] params = query.split("&");
+
+		final ArrayList<String> newArgs = new ArrayList<>();
+
+		// Store as if it was a direct call to SolverMain.
+		for (final String p : params) {
+			final String[] splitParam = p.split("=");
+			newArgs.add("-" + splitParam[0]);
+			newArgs.add(splitParam[1]);
+		}
+
+		newArgs.add("-b");
+		newArgs.add(parseRequestBody(t.getRequestBody()));
+		newArgs.add("-d");
+
+		// Store from ArrayList into regular String[].
+		final String[] args = new String[newArgs.size()];
+		int i = 0;
+		for(String arg: newArgs) {
+			args[i] = arg;
+			i++;
+		}
 
 		// Get user-provided flags.
 		final SolverArgumentParser ap = new SolverArgumentParser(args);
@@ -134,7 +135,7 @@ public class WebServer {
 		System.out.println("> Sent response to " + t.getRemoteAddress().toString());
 	}
 
-	public static void sendResponseHeaders(final HttpExchange t, int length) {
+	public static void sendResponseHeaders(final HttpExchange t, int length) throws IOException {
 		final Headers hdrs = t.getResponseHeaders();
 
 		//t.sendResponseHeaders(200, responseFile.length());
