@@ -3,18 +3,16 @@ package pt.ulisboa.tecnico.cnv.custommanager.server;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 
-import pt.ulisboa.tecnico.cnv.custommanager.domain.RequestCost;
 import pt.ulisboa.tecnico.cnv.custommanager.domain.RequestState;
 import pt.ulisboa.tecnico.cnv.custommanager.handler.ResponseHandler;
-import pt.ulisboa.tecnico.cnv.custommanager.service.InstanceSelector;
+import pt.ulisboa.tecnico.cnv.custommanager.service.*;
 import pt.ulisboa.tecnico.cnv.custommanager.handler.LoadBalancerHandler;
-import pt.ulisboa.tecnico.cnv.custommanager.service.RecentRequestsCache;
-import pt.ulisboa.tecnico.cnv.custommanager.service.RequestTracker;
-import pt.ulisboa.tecnico.cnv.custommanager.service.SendResponses;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
 public class LoadBalancerServer {
@@ -22,6 +20,8 @@ public class LoadBalancerServer {
     private static LoadBalancerServer _instance = null;
 
     private static Logger _logger = Logger.getLogger(InstanceSelector.class.getName());
+
+    private static final int HEALTH_CHECK_GRACE_PERIOD = 3;
 
     public static LoadBalancerServer getInstance() {
         if (_instance == null) {
@@ -48,6 +48,19 @@ public class LoadBalancerServer {
         responsesServer.setExecutor(Executors.newCachedThreadPool());
         responsesServer.start();*/
 
+        // schedules AutoScaler to execute repeatedly every check period of 1 minute
+        ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(2);
+        // TODO: keep in mind that the period to shut down a machine is 5 and not 1
+        scheduler.scheduleAtFixedRate(new AutoScaler(), 0, 1, TimeUnit.MINUTES);
+
+        // schedules Healthcheck to execute repeatedly every check period of 300 seconds
+        // TODO: do i need to create a new schedular ?
+        //ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+        // TODO: change period to 5
+        scheduler.scheduleAtFixedRate(new HealthChecker(), HEALTH_CHECK_GRACE_PERIOD, 5, TimeUnit.SECONDS);
+
+        Runtime.getRuntime().addShutdownHook(new Shutdown());
+
         System.out.println(server.getAddress().toString());
 
         gatherAllInstancesTest();
@@ -56,6 +69,16 @@ public class LoadBalancerServer {
         //shutdownInstanceTest();
         //terminateInstanceTest();
         //terminateAllInstancesTest();
+    }
+
+    /**
+     * Perform instance cleanup: terminates instances in all reservations
+     */
+    static class Shutdown extends Thread {
+        @Override
+        public void run() {
+            InstanceSelector.getInstance().shutdown();
+        }
     }
 
     public static void repeatRequest(final HttpExchange t) {
