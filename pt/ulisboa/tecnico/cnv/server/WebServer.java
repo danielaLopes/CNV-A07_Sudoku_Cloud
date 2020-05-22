@@ -78,7 +78,6 @@ public class WebServer {
 			final String query = t.getRequestURI().getQuery();
 			System.out.println("> Query:\t" + query);
 
-			System.out.println("solveRequest");
 			// Break it down into String[].
 			final String[] params = query.split("&");
 
@@ -92,13 +91,12 @@ public class WebServer {
 			}
 
 			String body = parseRequestBody(t.getRequestBody());
-			//System.out.println("body: " + body);
+
+			System.out.println("body size: " + body.length());
 
 			newArgs.add("-b");
 			newArgs.add(body);
 			newArgs.add("-d");
-
-			//System.out.println("after new args");
 
 			// Store from ArrayList into regular String[].
 			final String[] args = new String[newArgs.size()];
@@ -108,34 +106,18 @@ public class WebServer {
 				i++;
 			}
 
-			//System.out.println("after args");
-
-			//for (i = 0; i < newArgs.size(); i++)
-			//    System.out.println(args[i]);
-
 			// Get user-provided flags.
 			final SolverArgumentParser ap = new SolverArgumentParser(args);
-
-			//System.out.println("after solverargumentparser");
 
 			// Create solver instance from factory.
 			final Solver s = SolverFactory.getInstance().makeSolver(ap);
 
-			//System.out.println("after solverfactory");
-
-			//System.out.println("before solution");
-
 			//Solve sudoku puzzle
 			JSONArray solution = s.solveSudoku();
-
-			// System.out.println("after solution");
 
 			// send response to /response endpoint from LoadBalancer after solving sudoku
 			final Headers hdrs = t.getResponseHeaders();
 
-			//t.sendResponseHeaders(200, responseFile.length());
-
-			///hdrs.add("Content-Type", "image/png");
 			hdrs.add("Content-Type", "application/json");
 
 			hdrs.add("Access-Control-Allow-Origin", "*");
@@ -148,6 +130,7 @@ public class WebServer {
 
 			final OutputStream os = t.getResponseBody();
 			OutputStreamWriter osw = new OutputStreamWriter(os, "UTF-8");
+
 			osw.write(solution.toString());
 			osw.flush();
 			osw.close();
@@ -157,7 +140,9 @@ public class WebServer {
 
 			//MetricsTool.printToFile(query);
 			//MetricsTool.insertDynamo(query);
+			// TODO: see if it's worthed to store these in a buffer
 			System.out.println("inserted data to dynamo");
+			System.out.flush();
 		}
 	}
 }

@@ -43,15 +43,9 @@ public class LoadBalancerServer {
         // main handler that receives requests from sudoku solver website
         server.createContext("/sudoku", new LoadBalancerHandler());
         // handler that receives responses to requests from WebServer instances
-        server.createContext("/response", new ResponseHandler());
+        //server.createContext("/response", new ResponseHandler());
         server.setExecutor(Executors.newCachedThreadPool());
         server.start();
-
-
-        /*final HttpServer responsesServer = HttpServer.create(new InetSocketAddress(81), 0);
-        responsesServer.createContext("/response", new ResponseHandler());
-        responsesServer.setExecutor(Executors.newCachedThreadPool());
-        responsesServer.start();*/
 
         // schedules AutoScaler to execute repeatedly every check period of 1 minute
         ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(2);
@@ -71,11 +65,6 @@ public class LoadBalancerServer {
 
         //gatherAllInstancesTest();
         //startInstanceTest();
-        /*startInstanceTest();
-        startInstanceTest();
-        startInstanceTest();
-        startInstanceTest();
-        startInstanceTest();*/
         //Thread.sleep(1000); // sleeps for 10 seconds
         //shutdownInstanceTest();
         //terminateInstanceTest();
@@ -100,12 +89,12 @@ public class LoadBalancerServer {
         final String query = t.getRequestURI().getQuery();
         _logger.info("> Query:\t" + query);
 
-        byte[] solution;
+        String solution = null;
 
-        solution = "ola".getBytes();
+        //solution = "ola".getBytes();
 
         // check if request is in cache
-        solution = RecentRequestsCache.getInstance().get(query);
+        //solution = RecentRequestsCache.getInstance().get(query);
         if (solution != null) {
             try {
                 SendMessages.getInstance().sendClientResponse(t, solution);

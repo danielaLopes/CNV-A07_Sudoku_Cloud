@@ -4,10 +4,7 @@ import com.amazonaws.services.ec2.model.Instance;
 import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
 
-import java.io.DataInputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
+import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -30,7 +27,9 @@ public class SendMessages {
 
     private SendMessages() {}
 
-    public static void sendClientResponse(final HttpExchange t, byte[] solution) throws IOException {
+    public static void sendClientResponse(final HttpExchange t, String solution) throws IOException {
+
+        _logger.info("SOLUTION: " + solution);
 
         final Headers hdrs = t.getResponseHeaders();
 
@@ -42,11 +41,11 @@ public class SendMessages {
         hdrs.add("Access-Control-Allow-Methods", "POST, GET, HEAD, OPTIONS");
         hdrs.add("Access-Control-Allow-Headers", "Origin, Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers");
 
-        t.sendResponseHeaders(200, solution.toString().length());
+        t.sendResponseHeaders(200, solution.length());
 
         final OutputStream os = t.getResponseBody();
         OutputStreamWriter osw = new OutputStreamWriter(os, "UTF-8");
-        osw.write(solution.toString());
+        osw.write(solution);
         osw.flush();
         osw.close();
 
@@ -58,64 +57,47 @@ public class SendMessages {
     //public static int sendHealthCheck(Instance instance, String request) throws Exception {
     public static int sendHealthCheck(Instance instance) throws IOException {
 
-        //String urlString = "http://" + instance.getPublicIpAddress() + ":8000/ping?" + request;
         String urlString = "http://" + instance.getPublicIpAddress() + ":8000/ping";
 
-        return getResponseCode(sendServerRequest(false, urlString, null, null));
+        return getResponseCode(sendServerRequest("GET", urlString, null));
     }
 
     public static int sendLocalHealthCheck() throws IOException  {
 
         String urlString = "http://127.0.0.1:8000/ping";
 
-        return getResponseCode(sendServerRequest(false, urlString, null, null));
+        return getResponseCode(sendServerRequest("GET", urlString, null));
     }
 
-    public static int sendSudokuRequest(Instance instance, String request, byte[] body) throws IOException {
+    public static String sendSudokuRequest(Instance instance, String request, byte[] body) throws IOException {
 
-        String urlString = "http://" + instance.getPublicIpAddress() + ":8000/sudoku";
+        String urlString = "http://" + instance.getPublicIpAddress() + ":8000/sudoku?" + request;
 
-        return getResponseCode(sendServerRequest(true, urlString, request, body));
+        return getResponse(sendServerRequest("POST", urlString, body));
     }
 
-    public static byte[] sendLocalSudokuRequest(String request, byte[] body) throws IOException  {
+    public static String sendLocalSudokuRequest(String request, byte[] body) throws IOException  {
 
-        String urlString = "http://127.0.0.1:8000/sudoku";
+        String urlString = "http://127.0.0.1:8000/sudoku?" + request;
         _logger.info("urlString: " + urlString);
 
-        return getResponse(sendServerRequest(true, urlString, request, body));
+        return getResponse(sendServerRequest("POST", urlString, body));
     }
 
-    public static HttpURLConnection sendServerRequest(boolean hasBody, String urlString, String urlParameters, byte[] body) throws IOException {
+    public static HttpURLConnection sendServerRequest(String method, String urlString, byte[] body) throws IOException {
 
         URL url = new URL(urlString);
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-        connection.setRequestMethod("GET");
+        connection.setRequestMethod(method);
 
-        if(hasBody == true) {
+        if(method.equals("POST")) {
 
-            byte[] urlParametersBytes = urlParameters.getBytes( StandardCharsets.UTF_8 );
-
-            connection.setRequestProperty("Content-Type", "application/json; utf-8");
-            //connection.setRequestProperty("Accept", "application/json");
-            connection.setRequestProperty("Access-Control-Allow-Origin", "*");
-
-            connection.setRequestProperty("Access-Control-Allow-Credentials", "true");
-            connection.setRequestProperty("Access-Control-Allow-Methods", "POST, GET, HEAD, OPTIONS");
-            connection.setRequestProperty("Access-Control-Allow-Headers", "Origin, Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers");
-            connection.setRequestProperty( "Content-Length", Integer.toString(body.length));
             connection.setDoOutput(true);
-
-            _logger.info("BODY SIZE: " + body.length);
 
             try(OutputStream os = connection.getOutputStream()) {
                 os.write(body, 0, body.length);
             }
         }
-
-        connection.setUseCaches(false);
-        //connection.setDoInput(true);
-
         //connection.setReadTimeout(1000*60*15);
         //connection.setConnectTimeout(CONNECTION_TIMEOUT);
 
@@ -126,14 +108,27 @@ public class SendMessages {
         return connection;
     }
 
-    public static byte[] getResponse(HttpURLConnection connection) throws IOException {
-        //Get Response
-        DataInputStream is = new DataInputStream((connection.getInputStream()));
+    public static String getResponse(HttpURLConnection connection) throws IOException {
 
-        byte[] buffer = new byte[connection.getContentLength()];
-        is.readFully(buffer);
+        if (getResponseCode(connection) == 200) {
 
-        return buffer;
+            BufferedReader in = new BufferedReader(
+                    new InputStreamReader(
+                            connection.getInputStream()));
+
+            StringBuilder response = new StringBuilder();
+            String currentLine;
+
+            while ((currentLine = in.readLine()) != null)
+                response.append(currentLine);
+
+            in.close();
+
+            return response.toString();
+        }
+        else {
+            return null;
+        }
     }
 
     public static int getResponseCode(HttpURLConnection connection) throws IOException {
