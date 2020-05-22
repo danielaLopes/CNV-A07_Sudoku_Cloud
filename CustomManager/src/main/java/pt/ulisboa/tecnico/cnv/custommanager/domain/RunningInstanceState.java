@@ -21,10 +21,10 @@ public class RunningInstanceState {
         _processingRequests.remove(query);
     }
 
-    public int calculateRequestCostSum() {
-        int totalEstimatedCost = 0;
+    public long calculateRequestCostSum() {
+        long totalEstimatedCost = 0;
         for (RequestCost cost : _processingRequests.values()) {
-            totalEstimatedCost += cost.getCost();
+            totalEstimatedCost += cost.getFieldLoads();
         }
         return totalEstimatedCost;
     }
