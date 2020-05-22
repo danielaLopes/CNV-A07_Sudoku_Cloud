@@ -33,6 +33,7 @@ public class RunningInstanceState {
 
     }
 
+
     public Long calculateRequestCostSum() {
         Long totalEstimatedCost = 0L;
         for (RequestCost cost : _processingRequests.values()) {

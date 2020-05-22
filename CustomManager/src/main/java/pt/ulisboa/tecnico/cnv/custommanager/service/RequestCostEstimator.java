@@ -2,6 +2,7 @@ package pt.ulisboa.tecnico.cnv.custommanager.service;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Logger;
 
@@ -14,6 +15,7 @@ import com.amazonaws.services.dynamodbv2.document.Item;
 import com.amazonaws.services.dynamodbv2.document.Table;
 import com.amazonaws.services.dynamodbv2.model.*;
 import com.amazonaws.services.dynamodbv2.util.TableUtils;
+import pt.ulisboa.tecnico.cnv.custommanager.domain.MultipleLinearRegressionFitter;
 import pt.ulisboa.tecnico.cnv.custommanager.domain.PuzzleAlgorithmProperty;
 import pt.ulisboa.tecnico.cnv.custommanager.domain.RequestCost;
 
@@ -32,12 +34,14 @@ public class RequestCostEstimator {
     // example: BFS_9X9_101
     private static ConcurrentMap<String, PuzzleAlgorithmProperty> costEstimationsConstants;
 
+    // Multiple Linear Regression for new requests
+    private static MultipleLinearRegressionFitter fieldLoadFitter;
+    private static MultipleLinearRegressionFitter executionTimeFitter;
+
     // an entry for each possible combination of algorithm and puzzle
     //public ConcurrentMap<String, CostEstimation> costEstimations = new ConcurrentHashMap<>();
 
     private RequestCostEstimator() {
-
-        fillCostEstimations();
 
         ProfileCredentialsProvider credentialsProvider = new ProfileCredentialsProvider();
         try {
@@ -61,6 +65,11 @@ public class RequestCostEstimator {
 
         fieldLoadsTable = dynamoDB.getTable(tableName);
 
+        costEstimationsConstants = new ConcurrentHashMap<>();
+        fieldLoadFitter = new MultipleLinearRegressionFitter();
+        executionTimeFitter = new MultipleLinearRegressionFitter();
+
+        fillCostEstimations();
 
         _logger.info("Client, dynamoDB and table configured successfully.");
     }
@@ -82,20 +91,22 @@ public class RequestCostEstimator {
         // if the number of field loads for this request has already been stored
         if(item != null) return computeCPUPercentage(Long.parseLong(item.get("fieldLoads").toString()));
 
-
-        // check if the request is a known puzzle
         String requestAlgorithmPuzzle = extractAlgorithmPuzzle(query);
         Integer requestUnassigned = extractUnassigned(query);
-        _logger.info("Request " + requestAlgorithmPuzzle + " with "+ requestUnassigned + " unasigned not present in database.");
+        _logger.info("Request " + requestAlgorithmPuzzle + " with "+ requestUnassigned + " unassigned not present in database.");
+
+        // check if the request is a known puzzle
         PuzzleAlgorithmProperty requestProperties = costEstimationsConstants.get(requestAlgorithmPuzzle);
         if(requestProperties != null) {
+            _logger.info("Request " + requestAlgorithmPuzzle + " is a known puzzle");
             Long estimatedFieldLoads = requestProperties.computeEstimatedFieldLoads(requestUnassigned);
             return computeCPUPercentage(estimatedFieldLoads);
         }
 
-        // MISSING: HANDLE UNKNOWN PUZZLES
-
-        return null;
+        _logger.info("Request " + requestAlgorithmPuzzle + " is an unknown puzzle");
+        // if its an unknown puzzle, we make a prediction of the request load
+        fieldLoadFitter.estimateRegressionParameters();
+        return new RequestCost((long) fieldLoadFitter.makeEstimation(10, 59));
     }
 
     public static Item getFromDynamo(String query) {
@@ -120,6 +131,14 @@ public class RequestCostEstimator {
 
     public void fillCostEstimations() {
         // put entries in the map
+        fieldLoadFitter.addInstance(new double[]{10, 59}, (double) 71);
+        fieldLoadFitter.addInstance(new double[]{9, 57}, (double) 68);
+        fieldLoadFitter.addInstance(new double[]{12, 61}, (double) 76);
+        fieldLoadFitter.addInstance(new double[]{10, 52}, (double) 56);
+        fieldLoadFitter.addInstance(new double[]{9, 48}, (double) 57);
+        fieldLoadFitter.addInstance(new double[]{10, 55}, (double) 77);
+        fieldLoadFitter.addInstance(new double[]{8, 51}, (double) 55);
+        fieldLoadFitter.addInstance(new double[]{11, 62}, (double) 67);
     }
 
     public void verifyTable() {
@@ -139,8 +158,6 @@ public class RequestCostEstimator {
     }
 
     public static String extractAlgorithmPuzzle(String query) {
-        //String[] queryAttributes = query.split("\\?")[1].split("&");
-
         String[] queryAttributes = query.split("&");
         String algorithmName = queryAttributes[0].split("=")[1];
 
@@ -151,7 +168,6 @@ public class RequestCostEstimator {
     }
 
     public static Integer extractUnassigned(String query) {
-        //String[] queryAttributes = query.split("\\?")[1].split("&");
         String[] queryAttributes = query.split("&");
 
         return Integer.parseInt(queryAttributes[1].split("=")[1]);
