@@ -94,7 +94,7 @@ public class LoadBalancerServer {
         //solution = "ola".getBytes();
 
         // check if request is in cache
-        //solution = RecentRequestsCache.getInstance().get(query);
+        //solution = RequestCostCache.getInstance().get(query);
         if (solution != null) {
             try {
                 SendMessages.getInstance().sendClientResponse(t, solution);
