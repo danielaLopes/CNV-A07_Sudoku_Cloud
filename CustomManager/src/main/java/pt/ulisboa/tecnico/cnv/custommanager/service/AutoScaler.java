@@ -15,7 +15,7 @@ public class AutoScaler implements Runnable {
         _logger.info("Running auto scaler...");
 
         // Makes sure we are running the right number of instances
-        InstanceSelector.getInstance().assertRunningInstancesBetweenMinMax();
+        //InstanceSelector.getInstance().assertRunningInstancesBetweenMinMax();
 
         /*int averageUsage = InstanceSelector.getInstance().getAverageUsage();
         int ratioIdleInstances = InstanceSelector.getInstance().ratioIdleInstances();

@@ -14,10 +14,13 @@ public class HealthChecker implements Runnable {
         _logger.info("Running health checking...");
 
         // loops through all instances to healthcheck
-        List<Instance> runningInstances = InstanceSelector.getInstance().getRunningInstances();
-        for (Instance instance : runningInstances) {
+        //List<Instance> runningInstances = InstanceSelector.getInstance().getRunningInstances();
+        //for (Instance instance : runningInstances) {
             try {
-                int code = SendMessages.getInstance().sendHealthCheck(instance);
+                //int code = SendMessages.getInstance().sendHealthCheck(instance);
+                int code = SendMessages.getInstance().sendLocalHealthCheck();
+
+                _logger.info("HEALTH CODE: " + code);
                 if (code == 200) {
                     _logger.info("Instance is healthy!");
                 }
@@ -26,9 +29,10 @@ public class HealthChecker implements Runnable {
                 }
             }
             catch(Exception e) {
-                _logger.warning("Failed to send healthcheck to " + instance.getInstanceId());
+                //_logger.warning("Failed to send healthcheck to " + instance.getInstanceId());
+                _logger.warning(e + " Failed to send healthcheck");
             }
             
-        }
+        //}
     }
 }
