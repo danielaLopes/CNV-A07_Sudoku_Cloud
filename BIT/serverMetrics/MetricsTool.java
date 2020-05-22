@@ -102,7 +102,7 @@ public class MetricsTool {
         }
     }
 
-    public static synchronized void insertDynamo(String query)
+    public static synchronized int insertDynamo(String query)
     {
         Long currentThreadId = Thread.currentThread().getId();
         Long current_field_load_count = fieldloadcount.get(currentThreadId);
@@ -166,8 +166,8 @@ public class MetricsTool {
         } catch(InterruptedException ie) {
             System.out.println("Thread was interrupted.");
         }
-
-        
+        // so that the server can include this in the response to the LoadBalancer
+        return current_field_load_count;
     }
 
     public static void resetCount(long currentThreadId)

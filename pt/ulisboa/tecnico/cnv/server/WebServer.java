@@ -126,12 +126,18 @@ public class WebServer {
 			hdrs.add("Access-Control-Allow-Methods", "POST, GET, HEAD, OPTIONS");
 			hdrs.add("Access-Control-Allow-Headers", "Origin, Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers");
 
-			t.sendResponseHeaders(200, solution.toString().length());
+			Long fieldLoads = MetricsTool.insertDynamo(query);
+			// TODO: see if it's worthed to store these in a buffer
+			System.out.println("inserted data to dynamo");
+
+			String response = solution.toString() + ":" + fieldLoads.toString();
+
+			t.sendResponseHeaders(200, response.length());
 
 			final OutputStream os = t.getResponseBody();
 			OutputStreamWriter osw = new OutputStreamWriter(os, "UTF-8");
 
-			osw.write(solution.toString());
+			osw.write(response);
 			osw.flush();
 			osw.close();
 
@@ -139,9 +145,6 @@ public class WebServer {
 			System.out.println("> Sent response to " + t.getRemoteAddress().toString());
 
 			//MetricsTool.printToFile(query);
-			//MetricsTool.insertDynamo(query);
-			// TODO: see if it's worthed to store these in a buffer
-			System.out.println("inserted data to dynamo");
 			System.out.flush();
 		}
 	}

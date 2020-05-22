@@ -41,6 +41,7 @@ public class LoadBalancerHandler implements HttpHandler {
         // default is choosing always instance with less CPU -> this leads to more machines running at less CPU
         // should we estimate %CPU based on the cost of a request
         //solution = InstanceSelector.getInstance().selectInstance(cost).solveSudoku();
+        // TODO: select best instance
         Instance instance = InstanceSelector.getInstance().selectInstance(cost);
         // Sends request for chosen instance to solve sudoku
         // Do this asynchronously ?? timeout??
@@ -54,8 +55,15 @@ public class LoadBalancerHandler implements HttpHandler {
         // TODO: requests and avoid overloading servers
         // TODO: use query without the algorithm, since the result is the same ?????
         //RequestTracker.getInstance().add(requestUuid, requestState);
-        String solution = SendMessages.getInstance().sendSudokuRequest(instance, query, bodyBytes);
-        if (solution != null) {
+        String response = SendMessages.getInstance().sendSudokuRequest(instance, query, bodyBytes);
+
+        if (response != null) {
+            String fields[] = response.split(":");
+            String solution = fields[0];
+            Long fieldLoads = Long.parseLong(fields[1]);
+            RequestCost actualCost = new RequestCost(fieldLoads);
+            // saves requestCost return by server in the cache
+            RequestCostCache.getInstance().put(query, actualCost);
             SendMessages.getInstance().sendClientResponse(t, solution);
         }
         else {
@@ -67,5 +75,9 @@ public class LoadBalancerHandler implements HttpHandler {
     public String generateRequestUuid() {
         UUID uuid = UUID.randomUUID();
         return uuid.toString();
+    }
+
+    public void parseServerResponse(String response) {
+
     }
 }

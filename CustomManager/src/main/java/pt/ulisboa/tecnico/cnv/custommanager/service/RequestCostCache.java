@@ -27,7 +27,7 @@ public class RequestCostCache {
         return _instance;
     }
 
-    public static synchronized void add(String key, RequestCost response) {
+    public static synchronized void put(String key, RequestCost response) {
         if (_cache.size() >= MAX_SIZE) {
             _cache.put(key, response);
         }
