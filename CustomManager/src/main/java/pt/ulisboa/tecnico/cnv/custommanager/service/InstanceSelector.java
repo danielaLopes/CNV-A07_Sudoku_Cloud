@@ -145,10 +145,10 @@ public class InstanceSelector {
 
         RunInstancesRequest runInstancesRequest = new RunInstancesRequest();
 
-        runInstancesRequest.withImageId("ami-09fe936ae4a44698e")
+        runInstancesRequest.withImageId("ami-0b21d61cb9685f540")
                             .withMinCount(n)
                             .withMaxCount(n)
-                            .withKeyName("CNV")
+                            .withKeyName("CNV-proj")
                             .withSecurityGroupIds("sg-0bf52fd8f7cb92397")
                             .withInstanceType("t2.micro");
 
@@ -169,21 +169,21 @@ public class InstanceSelector {
             _logger.info("Going to destroy " + numInstances + " out of " + nRunningInstances);
         }
 
-        // TODO: removeInstance
-        /*List<InstanceState> instancesList = new ArrayList<>(_instances.values());
-        Collections.sort(instancesList, InstanceState.COMPARATOR_BY_USAGE);
+        List<RunningInstanceState> instanceStates = new ArrayList<>(_runningInstances.values());
+        // TODO: create comparator
+        //Collections.sort(instanceStates, InstanceState.COMPARATOR_BY_USAGE);
 
         int numRemoved = 0;
-        for (InstanceState instance: instancesList) {
-            if (!instance.isShuttingDown()) {
+        for (RunningInstanceState instance: instanceStates) {
+            /*if (!instance.isShuttingDown()) {
                 numRemoved++;
-                logger.info("Scheduling shutdown for instance " + instance.getInstanceId() + " with sage of " + instance.getUsageRatio());
+                logger.info("Scheduling shutdown for instance " + instance.getInstanceId() + " with usage of " + instance.getUsageRatio());
                 instance.scheduleShutdown();
-            }
+            }*/
             if (numRemoved == numInstances) {
                 return;
             }
-        }*/
+        }
     }
 
     public void removeInstance(String instanceId) {
