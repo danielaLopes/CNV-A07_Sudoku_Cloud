@@ -80,6 +80,10 @@ public class InstanceSelector {
                 .build();
     }
 
+    public RunningInstanceState getRunningInstanceState(String instanceId) {
+        return _runningInstances.get(instanceId);
+    }
+
     /**
      * Gathers all instances in the AWS Account, no matter the state they are in.
      */
