@@ -1,6 +1,5 @@
 package pt.ulisboa.tecnico.cnv.custommanager.handler;
 
-import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import pt.ulisboa.tecnico.cnv.custommanager.domain.RequestCost;
@@ -8,9 +7,6 @@ import pt.ulisboa.tecnico.cnv.custommanager.domain.RequestState;
 import pt.ulisboa.tecnico.cnv.custommanager.service.*;
 
 import java.io.IOException;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.util.ArrayList;
 import java.util.UUID;
 import java.util.logging.Logger;
 
@@ -34,7 +30,7 @@ public class LoadBalancerHandler implements HttpHandler {
         // check if request is in cache
         solution = RecentRequestsCache.getInstance().get(query);
         if (solution != null) {
-            SendResponses.getInstance().sendClientResponse(t, solution);
+            SendMessages.getInstance().sendClientResponse(t, solution);
         }
         // TODO: call WebServer to start processing request
         else {

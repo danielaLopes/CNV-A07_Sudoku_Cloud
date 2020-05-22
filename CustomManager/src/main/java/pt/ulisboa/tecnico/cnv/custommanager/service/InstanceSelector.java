@@ -84,6 +84,18 @@ public class InstanceSelector {
         return _runningInstances.get(instanceId);
     }
 
+    public List<Instance> getRunningInstances() {
+        List<Instance> instances = new ArrayList<>();
+        for (String instanceId : _runningInstances.keySet()) {
+            instances.add(_instances.get(instanceId));
+        }
+        return instances;
+    }
+
+    // -------------------------------------------------------------
+    // -----            Methods to manage instances            -----
+    // -------------------------------------------------------------
+
     /**
      * Gathers all instances in the AWS Account, no matter the state they are in.
      */
@@ -101,9 +113,22 @@ public class InstanceSelector {
                         " with state " + instance.getState());
                 _instances.put(instance.getInstanceId(), instance);
                 if (instance.getState().getName().equals("running")) {
-                    _runningInstances.put(instance.getImageId(), new RunningInstanceState());
+                    _runningInstances.put(instance.getInstanceId(), new RunningInstanceState(instance.getInstanceId()));
                 }
             }
+        }
+    }
+
+    public synchronized void assertRunningInstancesBetweenMinMax() {
+        int nRunningInstances = _runningInstances.size();
+        if (nRunningInstances > MAX_INSTANCES) {
+            int numToDestroy = nRunningInstances - MAX_INSTANCES;
+            _logger.info("Too many instances running (" + nRunningInstances + ") destroying " + numToDestroy);
+            removeInstances(numToDestroy);
+        } else if (nRunningInstances < MIN_INSTANCES) {
+            int numToLaunch = MIN_INSTANCES - nRunningInstances;
+            _logger.info("Too few instances running (" + nRunningInstances + ") launching " + numToLaunch);
+            startInstances(numToLaunch);
         }
     }
 
@@ -120,7 +145,7 @@ public class InstanceSelector {
 
         RunInstancesRequest runInstancesRequest = new RunInstancesRequest();
 
-        runInstancesRequest.withImageId("ami-07605abcbabe8e9a7")
+        runInstancesRequest.withImageId("ami-09fe936ae4a44698e")
                             .withMinCount(n)
                             .withMaxCount(n)
                             .withKeyName("CNV")
@@ -132,34 +157,50 @@ public class InstanceSelector {
         for (Instance instance: runInstancesResult.getReservation().getInstances()) {
             _logger.info("Started instance " + instance.getInstanceId());
             _instances.put(instance.getInstanceId(), instance);
-            _runningInstances.put(instance.getInstanceId(), new RunningInstanceState());
+            _runningInstances.put(instance.getInstanceId(), new RunningInstanceState(instance.getInstanceId()));
         }
     }
 
-    /*public void shutdownInstances(int n) {
-
-        _logger.info("Shutting down all instances...");
-        DescribeInstancesRequest request = new DescribeInstancesRequest();
-
-        List<String> values = new ArrayList<>();
-        values.add(AwsConfiguration.getInstance().getWebServerTagValue());
-        Filter filter = new Filter("tag:" + AwsConfiguration.getInstance().getWebServerTagValue(), values);
-        DescribeInstancesResult result = amazonEC2.describeInstances(request.withFilters(filter));
-
-        List<Reservation> reservations = result.getReservations();
-
-        for (Reservation reservation: reservations) {
-            List<Instance> instancesList = reservation.getInstances();
-
-            for (Instance instance: instancesList) {
-                if (instance.getState().getName().equals("running")) {
-                    logger.info("Shutting instance " + instance.getInstanceId());
-                    destroyInstance(instance.getInstanceId());
-                }
-            }
+    public synchronized void removeInstances(int numInstances) {
+        int nRunningInstances = _runningInstances.size();
+        if (nRunningInstances - numInstances < MIN_INSTANCES) {
+            return;
+        } else {
+            _logger.info("Going to destroy " + numInstances + " out of " + nRunningInstances);
         }
 
-    }*/
+        // TODO: removeInstance
+        /*List<InstanceState> instancesList = new ArrayList<>(_instances.values());
+        Collections.sort(instancesList, InstanceState.COMPARATOR_BY_USAGE);
+
+        int numRemoved = 0;
+        for (InstanceState instance: instancesList) {
+            if (!instance.isShuttingDown()) {
+                numRemoved++;
+                logger.info("Scheduling shutdown for instance " + instance.getInstanceId() + " with sage of " + instance.getUsageRatio());
+                instance.scheduleShutdown();
+            }
+            if (numRemoved == numInstances) {
+                return;
+            }
+        }*/
+    }
+
+    public void removeInstance(String instanceId) {
+        // since we can decide to remove a non running instance, we
+        // need to check if it's on the running Instances
+        if (_runningInstances.containsKey(instanceId)) {
+            _runningInstances.remove(instanceId);
+        }
+        _instances.remove(instanceId);
+
+        StopInstancesRequest stopInstancesRequest = new StopInstancesRequest();
+        stopInstancesRequest.withInstanceIds(instanceId);
+
+        _ec2.stopInstances(stopInstancesRequest);
+
+        _logger.info("Removing instance " + instanceId);
+    }
 
     public void terminateInstance(String instanceId) {
 
@@ -211,7 +252,37 @@ public class InstanceSelector {
         }
     }
 
+    public void shutdown() {
+        _logger.info("Shutting down all instances...");
+
+        DescribeInstancesResult describeInstancesRequest = _ec2.describeInstances();
+        List<Reservation> reservations = describeInstancesRequest.getReservations();
+
+        for (Reservation reservation : reservations) {
+            List<Instance> instancesToTerminate = reservation.getInstances();
+            for (Instance instance : instancesToTerminate) {
+                _logger.info("Terminating instance " + instance.getInstanceId() +
+                        " with state " + instance.getState());
+                // TODO: do we need to cleanup memory due to being static or somethig??
+                terminateInstance(instance.getInstanceId());
+            }
+        }
+    }
+
+    // -------------------------------------------------------------
+    // -----  Methods to help the LoadBalancer choose which    -----
+    // -----            instance to run a request              -----
+    // -------------------------------------------------------------
+
     public Instance selectInstance(RequestCost cost) {
+
+        // If there are requests before machines are up and running, it waits
+        while (_runningInstances.isEmpty()) {}
+
+        // sorts list of running instances to choose best instance to handle request
+        List<RunningInstanceState> instanceStates = new ArrayList<>(_runningInstances.values());
+        // TODO: comparators for running instances state
+        //Collections.sort(instanceStates, InstanceState.COMPARATOR_BY_USAGE);
         // Easy
         /*if (< cost < ) {
             chooseMostOccupiedMachineWithEnoughCPU();
@@ -221,9 +292,26 @@ public class InstanceSelector {
             chooseMachineWithLeastLoad(); // machine is going to be 100% in both difficulties
         }*/
         
-        _logger.info("Selecting instance to process request");
+        _logger.info("Selected instance to process request");
 
         return null;
     }
+
+    public Instance chooseMostOccupiedMachineWithEnoughCPU(RequestCost cost) {
+        _logger.info("Choosing best machine for processing request with cost: " + cost.getFieldLoads());
+        //for (Map.Entry<String, RunningInstanceState> i : _runningInstances.entrySet()) {
+            //i.getValue().getTotalCpu();
+            //_cloudWatch.getMetricData().toString();
+        //}
+        return null;
+    }
+
+    public void getRunningInstanceCpu(String id) {
+        //_instances.get(id).getCpuOptions().
+    }
+
+    // -------------------------------------------------------------
+    // ----- Methods to help the AutoScaler to choose machine  -----
+    // -------------------------------------------------------------
 
 }
