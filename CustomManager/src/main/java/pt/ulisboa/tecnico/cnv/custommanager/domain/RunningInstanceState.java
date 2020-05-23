@@ -50,6 +50,7 @@ public class RunningInstanceState {
     public boolean isOverloaded() { return _latestFieldLoads > OVERLOADED_FIELD_LOADS; }
 
     // should be performed at the end of receiving response to each request
+    // TODO: when should we put this information
     public void updateTotalFieldLoads(Long fieldLoads) {
         _totalFieldLoads += fieldLoads;
         _latestFieldLoads += fieldLoads;
@@ -75,7 +76,7 @@ public class RunningInstanceState {
 
     }
 
-
+    // TODO: should we do this on the comparator or the getLatestFieldLoads()
     public Long calculateRequestCostSum() {
         Long totalEstimatedCost = 0L;
         for (RequestCost cost : _processingRequests.values()) {
@@ -91,12 +92,13 @@ public class RunningInstanceState {
             totalEstimatedCost += cost.getFieldLoads();
         }
         return totalEstimatedCost;*/
-        return 0;
+        return _estimatedCpu;
     }
 
     // TODO
-    public int getTotalCpuAvailable() { return 0; }
+    public int getTotalCpuAvailable() { return 100 - _estimatedCpu; }
 
+    // orders from least cpu available to most cpu available
     public static final Comparator<RunningInstanceState> LEAST_CPU_AVAILABLE_COMPARATOR =
             new Comparator<RunningInstanceState>() {
         @Override
@@ -105,11 +107,23 @@ public class RunningInstanceState {
         }
     };
 
-    public static final Comparator<RunningInstanceState> LEAST_TOTAL_FIELD_LOADS_COMPARATOR =
+    // orders from smaller latestFieldLoads value to biggest latestFieldLoads value
+    public static final Comparator<RunningInstanceState> LEAST_LATEST_FIELD_LOADS_COMPARATOR =
             new Comparator<RunningInstanceState>() {
         @Override
         public int compare(RunningInstanceState o1, RunningInstanceState o2) {
             return o1.getLatestFieldLoads().compareTo(o2.getLatestFieldLoads());
+        }
+    };
+
+    // TODO: see if it souhld be used for the loadbalancer to decide best machine to send request
+    // orders from instances with smaller sum of field loads from all processing requests to
+    // instances with bigger sum of field loads from all processing requests
+    public static final Comparator<RunningInstanceState> LEAST_SUM_PROCESSING_FIELD_LOADS_COMPARATOR =
+            new Comparator<RunningInstanceState>() {
+        @Override
+        public int compare(RunningInstanceState o1, RunningInstanceState o2) {
+            return o1.calculateRequestCostSum().compareTo(o2.calculateRequestCostSum());
         }
     };
 

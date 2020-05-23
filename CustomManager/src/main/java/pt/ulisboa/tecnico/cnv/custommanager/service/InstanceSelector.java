@@ -294,12 +294,13 @@ public class InstanceSelector {
         // TODO: see if we should choose first or last
         for (RunningInstanceState instanceState : instanceStates) {
             // if machine has enough CPU available
+            // chooses the machine with least cpu available that has enough available cpu to process the request
             if (instanceState.getTotalCpuAvailable() >= cost.getCpu()) {
                 return instanceState;
             }
         }
-        // if no machine has enough CPU available, chooses the one with least CPU, even if that's above 100
-        return instanceStates.get(instanceStates.size() -1 );
+        // if no machine has enough CPU available, chooses the one with most CPU available, even if that's above 100
+        return instanceStates.get(instanceStates.size() - 1);
     }
 
     // -------------------------------------------------------------
@@ -320,7 +321,7 @@ public class InstanceSelector {
                 idleInstanceStates.add(instanceState);
             }
         }
-        Collections.sort(instanceStates, RunningInstanceState.LEAST_TOTAL_FIELD_LOADS_COMPARATOR);
+        Collections.sort(instanceStates, RunningInstanceState.LEAST_LATEST_FIELD_LOADS_COMPARATOR);
         // TODO: see if this is correct
 
         return idleInstanceStates;
@@ -341,7 +342,7 @@ public class InstanceSelector {
                 overloadedInstanceStates.add(instanceState);
             }
         }
-        Collections.sort(instanceStates, RunningInstanceState.LEAST_TOTAL_FIELD_LOADS_COMPARATOR);
+        Collections.sort(instanceStates, RunningInstanceState.LEAST_LATEST_FIELD_LOADS_COMPARATOR);
         // TODO: see if this is correct
 
         return overloadedInstanceStates;

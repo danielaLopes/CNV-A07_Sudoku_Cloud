@@ -28,6 +28,7 @@ public class AutoScaler implements Runnable {
 
         // makes sure a scale up or scale down is necessary
         Long averageFieldLoads = InstanceSelector.getInstance().averageFieldLoads();
+        _logger.info("Average Field Loads: " + averageFieldLoads);
         if (averageFieldLoads < AVERAGE_FIELD_LOADS_TO_SCALE_DOWN) {
             // we are ale to perform scale down
             if (nRunningInstances - 1 >= MIN_INSTANCES) {
@@ -85,6 +86,7 @@ public class AutoScaler implements Runnable {
     // TODO: only download 1 at each time?
     public void downScale(List<RunningInstanceState> idleInstanceStates) {
         _logger.info("Scaling down");
-        InstanceSelector.getInstance().removeInstance(idleInstanceStates.get(idleInstanceStates.size()));
+        // removes instance with least latestFieldLoads so that the most idle machine is terminated
+        InstanceSelector.getInstance().removeInstance(idleInstanceStates.get(0));
     }
 }

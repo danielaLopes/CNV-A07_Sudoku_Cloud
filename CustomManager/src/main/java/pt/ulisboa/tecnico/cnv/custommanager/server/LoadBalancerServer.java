@@ -3,13 +3,18 @@ package pt.ulisboa.tecnico.cnv.custommanager.server;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 
+import pt.ulisboa.tecnico.cnv.custommanager.domain.RequestCost;
 import pt.ulisboa.tecnico.cnv.custommanager.domain.RequestState;
+import pt.ulisboa.tecnico.cnv.custommanager.domain.RunningInstanceState;
 import pt.ulisboa.tecnico.cnv.custommanager.handler.ResponseHandler;
 import pt.ulisboa.tecnico.cnv.custommanager.service.*;
 import pt.ulisboa.tecnico.cnv.custommanager.handler.LoadBalancerHandler;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -50,18 +55,20 @@ public class LoadBalancerServer {
         // schedules AutoScaler to execute repeatedly every check period of 1 minute
         ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(2);
         // TODO: keep in mind that the period to shut down a machine is 5 and not 1
-        scheduler.scheduleAtFixedRate(new AutoScaler(), AUTO_SCALER_DELAY, AUTO_SCALER_PERIOD, TimeUnit.MINUTES);
+        //scheduler.scheduleAtFixedRate(new AutoScaler(), AUTO_SCALER_DELAY, AUTO_SCALER_PERIOD, TimeUnit.MINUTES);
 
         // schedules Healthcheck to execute repeatedly every check period of 300 seconds
         // TODO: do i need to create a new schedular ?
         //ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
         // TODO: change period to 5
-        scheduler.scheduleAtFixedRate(new HealthChecker(), HEALTH_CHECK_GRACE_PERIOD, 30, TimeUnit.SECONDS);
+        //scheduler.scheduleAtFixedRate(new HealthChecker(), HEALTH_CHECK_GRACE_PERIOD, 30, TimeUnit.SECONDS);
 
         // shutdown everything when LoadBalancer goes down
         //Runtime.getRuntime().addShutdownHook(new Shutdown());
 
         System.out.println(server.getAddress().toString());
+
+        orderInstancesTest();
 
         //gatherAllInstancesTest();
         //startInstanceTest();
@@ -148,7 +155,46 @@ public class LoadBalancerServer {
         InstanceSelector.getInstance().terminateAllInstances();
     }
 
-    public static void orderInstancesByCpu() {
+    public static void orderInstancesTest() {
+        List<RunningInstanceState> states = new ArrayList<>();
+        RunningInstanceState instance1 = new RunningInstanceState("instance1");
+        instance1.addNewRequest("request1", new RequestCost(3000L));
+        RunningInstanceState instance2 = new RunningInstanceState("instance2");
+        instance2.addNewRequest("request2", new RequestCost(1000L));
+        RunningInstanceState instance3 = new RunningInstanceState("instance3");
+        instance3.addNewRequest("request3", new RequestCost(500L));
+        instance3.addNewRequest("request4", new RequestCost(500L));
+
+        states.add(instance1);
+        states.add(instance2);
+        states.add(instance3);
+
+        instance1.updateTotalFieldLoads(3000L);
+        instance2.updateTotalFieldLoads(2000L);
+        instance3.updateTotalFieldLoads(1000L);
+
+        Collections.sort(states, RunningInstanceState.LEAST_LATEST_FIELD_LOADS_COMPARATOR);
+        _logger.info("LEAST_LATEST_FIELD_LOADS_COMPARATOR");
+        for (RunningInstanceState state : states) {
+            _logger.info(state.getInstanceId() + ":" + state.getLatestFieldLoads());
+        }
+        _logger.info("Chosen instance to perform a request: " + states.get(states.size() - 1).getInstanceId());
+
+        // selectInstance()
+        Collections.sort(states, RunningInstanceState.LEAST_CPU_AVAILABLE_COMPARATOR);
+        _logger.info("LEAST_CPU_AVAILABLE_COMPARATOR");
+        for (RunningInstanceState state : states) {
+            _logger.info(state.getInstanceId() + ":" + state.getTotalCpuAvailable());
+        }
+        _logger.info("Chosen instance to perform a request: " + states.get(states.size() - 1).getInstanceId());
+
+        Collections.sort(states, RunningInstanceState.LEAST_SUM_PROCESSING_FIELD_LOADS_COMPARATOR);
+        _logger.info("LEAST_SUM_PROCESSING_FIELD_LOADS_COMPARATOR");
+        for (RunningInstanceState state : states) {
+            _logger.info(state.getInstanceId() + ":" + state.calculateRequestCostSum());
+        }
+
+
 
     }
 
