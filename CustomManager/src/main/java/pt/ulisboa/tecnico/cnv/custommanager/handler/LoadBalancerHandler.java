@@ -5,6 +5,7 @@ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import pt.ulisboa.tecnico.cnv.custommanager.domain.RequestCost;
 import pt.ulisboa.tecnico.cnv.custommanager.domain.RequestState;
+import pt.ulisboa.tecnico.cnv.custommanager.domain.RunningInstanceState;
 import pt.ulisboa.tecnico.cnv.custommanager.service.*;
 
 import java.io.BufferedReader;
@@ -37,16 +38,20 @@ public class LoadBalancerHandler implements HttpHandler {
             cost = RequestCostEstimator.getInstance().estimateCost(query);
         }
 
+        String requestUuid = generateRequestUuid();
+
         // Choose instance to solve sudoku based on the estimated cost of the request
         // default is choosing always instance with less CPU -> this leads to more machines running at less CPU
         // should we estimate %CPU based on the cost of a request
         //solution = InstanceSelector.getInstance().selectInstance(cost).solveSudoku();
         // TODO: select best instance
-        Instance instance = InstanceSelector.getInstance().selectInstance(cost);
+        RunningInstanceState instanceState = InstanceSelector.getInstance().selectInstance(cost);
+        Instance instance = InstanceSelector.getInstance().getInstanceById(instanceState.getInstanceId());
+
         // Sends request for chosen instance to solve sudoku
-        // Do this asynchronously ?? timeout??
-        //solution = instance.solveSudoku();*/
-        //String requestUuid = generateRequestUuid();
+        instanceState.addNewRequest(requestUuid, cost);
+
+
         // TODO: these are dummy values
         //int expectedTime = 3000;
         //RequestState requestState = new RequestState(t, query, instanceId, expectedTime);
@@ -62,8 +67,14 @@ public class LoadBalancerHandler implements HttpHandler {
             String solution = fields[0];
             Long fieldLoads = Long.parseLong(fields[1]);
             RequestCost actualCost = new RequestCost(fieldLoads);
+
             // saves requestCost return by server in the cache
             RequestCostCache.getInstance().put(query, actualCost);
+
+            // Updates the state of the instance that performed this request
+            instanceState.updateTotalFieldLoads(fieldLoads);
+            instanceState.removeRequest(requestUuid);
+            // TODO: timeouts and check if request needs to be repeated
             SendMessages.getInstance().sendClientResponse(t, solution);
         }
         else {
