@@ -83,31 +83,36 @@ public class RequestCostEstimator {
     }
 
     public static RequestCost estimateCost(String query) {
-        
-        _logger.info("Estimating request cost");
-        // Check if the cost of the current request was already stored in the Dynamo
-        Item item = getFromDynamo(query);
-        //System.out.println(item.toString());
+        try {
 
-        // if the number of field loads for this request has already been stored
-        if(item != null) return computeCPUPercentage(Long.parseLong(item.get("fieldLoads").toString()));
+            _logger.info("Estimating request cost");
+            // Check if the cost of the current request was already stored in the Dynamo
+            Item item = getFromDynamo(query);
+            //System.out.println(item.toString());
 
-        String requestAlgorithmPuzzle = extractAlgorithmPuzzle(query);
-        Integer requestUnassigned = extractUnassigned(query);
-        _logger.info("Request " + requestAlgorithmPuzzle + " with "+ requestUnassigned + " unassigned not present in database.");
+            // if the number of field loads for this request has already been stored
+            if (item != null) return computeCPUPercentage(Long.parseLong(item.get("fieldLoads").toString()));
 
-        // check if the request is a known puzzle
-        PuzzleAlgorithmProperty requestProperties = costEstimationsConstants.get(requestAlgorithmPuzzle);
-        if(requestProperties != null) {
-            _logger.info("Request " + requestAlgorithmPuzzle + " is a known puzzle");
-            Long estimatedFieldLoads = requestProperties.computeEstimatedFieldLoads(requestUnassigned);
-            return computeCPUPercentage(estimatedFieldLoads);
+            String requestAlgorithmPuzzle = extractAlgorithmPuzzle(query);
+            Integer requestUnassigned = extractUnassigned(query);
+            _logger.info("Request " + requestAlgorithmPuzzle + " with " + requestUnassigned + " unassigned not present in database.");
+
+            // check if the request is a known puzzle
+            PuzzleAlgorithmProperty requestProperties = costEstimationsConstants.get(requestAlgorithmPuzzle);
+            if (requestProperties != null) {
+                _logger.info("Request " + requestAlgorithmPuzzle + " is a known puzzle");
+                Long estimatedFieldLoads = requestProperties.computeEstimatedFieldLoads(requestUnassigned);
+                return computeCPUPercentage(estimatedFieldLoads);
+            }
+
+            _logger.info("Request " + requestAlgorithmPuzzle + " is an unknown puzzle");
+            // if its an unknown puzzle, we make a prediction of the request load
+            fieldLoadFitter.estimateRegressionParameters();
+            return new RequestCost((long) fieldLoadFitter.makeEstimation(10, 59));
+        } catch(Exception e) {
+            e.printStackTrace();
+            return null;
         }
-
-        _logger.info("Request " + requestAlgorithmPuzzle + " is an unknown puzzle");
-        // if its an unknown puzzle, we make a prediction of the request load
-        fieldLoadFitter.estimateRegressionParameters();
-        return new RequestCost((long) fieldLoadFitter.makeEstimation(10, 59));
     }
 
     public static Item getFromDynamo(String query) {
@@ -268,65 +273,65 @@ public class RequestCostEstimator {
 
             /*DLX_9X9_101*/
             List<Integer> averageIncreaseDLX9x9_1 = Arrays.asList(0, 0, 18, 9, 0, 9, 0, 16);
-            PuzzleAlgorithmProperty propertyDLX9x9_1 = new PuzzleAlgorithmProperty(81L, intervalLimits9x9, adjustments9x9_1, averageIncreaseDLX9x9_1);
+            PuzzleAlgorithmProperty propertyDLX9x9_1 = new PuzzleAlgorithmProperty(318989L, intervalLimits9x9, adjustments9x9_1, averageIncreaseDLX9x9_1);
             costEstimationsConstants.put("DLX_9x9_101", propertyDLX9x9_1);
-            fieldLoadFitter.addInstance(new double[]{9, 0, 2}, (double) 81);
+            fieldLoadFitter.addInstance(new double[]{9, 0, 2}, (double) 318989);
 
             /*DLX_9X9_102*/
             List<Integer> averageIncreaseDLX9x9_2 = Arrays.asList(0, 0, 18, 9, 0, 9, 9, 9);
-            PuzzleAlgorithmProperty propertyDLX9x9_2 = new PuzzleAlgorithmProperty(81L, intervalLimits9x9, adjustments9x9_1, averageIncreaseDLX9x9_2);
+            PuzzleAlgorithmProperty propertyDLX9x9_2 = new PuzzleAlgorithmProperty(318989L, intervalLimits9x9, adjustments9x9_1, averageIncreaseDLX9x9_2);
             costEstimationsConstants.put("DLX_9x9_102", propertyDLX9x9_2);
 
             /*DLX_9X9_103*/
             List<Integer> averageIncreaseDLX9x9_3 = Arrays.asList(0, 9, 9, 9, 18, 9, 9, 9);
-            PuzzleAlgorithmProperty propertyDLX9x9_3 = new PuzzleAlgorithmProperty(81L, intervalLimits9x9, adjustments9x9_1, averageIncreaseDLX9x9_3);
+            PuzzleAlgorithmProperty propertyDLX9x9_3 = new PuzzleAlgorithmProperty(318989L, intervalLimits9x9, adjustments9x9_1, averageIncreaseDLX9x9_3);
             costEstimationsConstants.put("DLX_9x9_103", propertyDLX9x9_3);
 
             /*DLX_9X9_104*/
             List<Integer> averageIncreaseDLX9x9_4 = Arrays.asList(0, 0, 0, 0, 0, 0, 27, 0);
-            PuzzleAlgorithmProperty propertyDLX9x9_4 = new PuzzleAlgorithmProperty(81L, intervalLimits9x9, adjustments9x9_1, averageIncreaseDLX9x9_4);
+            PuzzleAlgorithmProperty propertyDLX9x9_4 = new PuzzleAlgorithmProperty(318989L, intervalLimits9x9, adjustments9x9_1, averageIncreaseDLX9x9_4);
             costEstimationsConstants.put("DLX_9x9_104", propertyDLX9x9_4);
 
             /*DLX_9X9_105*/
             List<Integer> averageIncreaseDLX9x9_5 = Arrays.asList(0, 0, 9, 0, 27, 0, 28, 25);
-            PuzzleAlgorithmProperty propertyDLX9x9_5 = new PuzzleAlgorithmProperty(81L, intervalLimits9x9, adjustments9x9_1, averageIncreaseDLX9x9_5);
+            PuzzleAlgorithmProperty propertyDLX9x9_5 = new PuzzleAlgorithmProperty(318989L, intervalLimits9x9, adjustments9x9_1, averageIncreaseDLX9x9_5);
             costEstimationsConstants.put("DLX_9x9_105", propertyDLX9x9_5);
 
             /*DLX_16X16_01*/
             List<Integer> averageIncreaseDLX16x16_1 = Arrays.asList(6, 12, 21, 12, 15, 28, 13, 13, 14);
-            PuzzleAlgorithmProperty propertyDLX16x16_1 = new PuzzleAlgorithmProperty(256L, intervalLimits16x16, adjustments16x16, averageIncreaseDLX16x16_1);
+            PuzzleAlgorithmProperty propertyDLX16x16_1 = new PuzzleAlgorithmProperty(4907531L, intervalLimits16x16, adjustments16x16, averageIncreaseDLX16x16_1);
             costEstimationsConstants.put("DLX_16x16_01", propertyDLX16x16_1);
             fieldLoadFitter.addInstance(new double[]{16, 0, 1}, (double) 256);
 
             /*DLX_16X16_02*/
             List<Integer> averageIncreaseDLX16x16_2 = Arrays.asList(12, 6, 3, 27, 15, 32, 19, 28, 11);
-            PuzzleAlgorithmProperty propertyDLX16x16_2 = new PuzzleAlgorithmProperty(256L, intervalLimits16x16, adjustments16x16, averageIncreaseDLX16x16_2);
+            PuzzleAlgorithmProperty propertyDLX16x16_2 = new PuzzleAlgorithmProperty(4907531L, intervalLimits16x16, adjustments16x16, averageIncreaseDLX16x16_2);
             costEstimationsConstants.put("DLX_16x16_02", propertyDLX16x16_2);
 
             /*DLX_16X16_03*/
             List<Integer> averageIncreaseDLX16x16_3 = Arrays.asList(0, 6, 12, 21, 15, 28, 25, 15, 11);
-            PuzzleAlgorithmProperty propertyDLX16x16_3 = new PuzzleAlgorithmProperty(256L, intervalLimits16x16, adjustments16x16, averageIncreaseDLX16x16_3);
+            PuzzleAlgorithmProperty propertyDLX16x16_3 = new PuzzleAlgorithmProperty(4907531L, intervalLimits16x16, adjustments16x16, averageIncreaseDLX16x16_3);
             costEstimationsConstants.put("DLX_16x16_03", propertyDLX16x16_3);
 
             /*DLX_16X16_04*/
             List<Integer> averageIncreaseDLX16x16_4 = Arrays.asList(0, 15, 12, 9, 12, 34, 6, 28, 3);
-            PuzzleAlgorithmProperty propertyDLX16x16_4 = new PuzzleAlgorithmProperty(256L, intervalLimits16x16, adjustments16x16, averageIncreaseDLX16x16_4);
+            PuzzleAlgorithmProperty propertyDLX16x16_4 = new PuzzleAlgorithmProperty(4907531L, intervalLimits16x16, adjustments16x16, averageIncreaseDLX16x16_4);
             costEstimationsConstants.put("DLX_16x16_04", propertyDLX16x16_4);
 
             /*DLX_16X16_05*/
             List<Integer> averageIncreaseDLX16x16_5 = Arrays.asList(1, 3, 1, 5, 7, 5, 4, 3, 7, 7, 5, 5, 10);
-            PuzzleAlgorithmProperty propertyDLX16x16_5 = new PuzzleAlgorithmProperty(625L, intervalLimits25x25, adjustments25x25, averageIncreaseDLX16x16_5);
+            PuzzleAlgorithmProperty propertyDLX16x16_5 = new PuzzleAlgorithmProperty(39142308L, intervalLimits25x25, adjustments25x25, averageIncreaseDLX16x16_5);
             costEstimationsConstants.put("DLX_16x16_05", propertyDLX16x16_5);
             fieldLoadFitter.addInstance(new double[]{25, 0, 2}, (double) 625);
 
             /*DLX_16X16_06*/
             List<Integer> averageIncreaseDLX16x16_6 = Arrays.asList(0, 7, 7, 4, 6, 7, 13, 7, 11, 17, 13, 2, 18);
-            PuzzleAlgorithmProperty propertyDLX16x16_6 = new PuzzleAlgorithmProperty(625L, intervalLimits25x25, adjustments25x25, averageIncreaseDLX16x16_6);
+            PuzzleAlgorithmProperty propertyDLX16x16_6 = new PuzzleAlgorithmProperty(43121261L, intervalLimits25x25, adjustments25x25, averageIncreaseDLX16x16_6);
             costEstimationsConstants.put("DLX_16x16_06", propertyDLX16x16_6);
 
             /*DLX_25X25_01*/
             List<Integer> averageIncreaseDLX25x25_1 = Arrays.asList(0, 7, 7, 4, 6, 7, 13, 7, 11, 17, 13, 2, 18);
-            PuzzleAlgorithmProperty propertyDLX25x25_1 = new PuzzleAlgorithmProperty(625L, intervalLimits25x25, adjustments25x25, averageIncreaseDLX25x25_1);
+            PuzzleAlgorithmProperty propertyDLX25x25_1 = new PuzzleAlgorithmProperty(43121261L, intervalLimits25x25, adjustments25x25, averageIncreaseDLX25x25_1);
             costEstimationsConstants.put("DLX_25x25_01", propertyDLX25x25_1);
 
 

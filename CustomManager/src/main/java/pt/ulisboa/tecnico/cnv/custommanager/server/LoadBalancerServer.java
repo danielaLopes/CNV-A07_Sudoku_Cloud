@@ -61,7 +61,7 @@ public class LoadBalancerServer {
         scheduler.scheduleAtFixedRate(new HealthChecker(), HEALTH_CHECK_GRACE_PERIOD, 5, TimeUnit.SECONDS);
 
         // shutdown everything when LoadBalancer goes down
-        Runtime.getRuntime().addShutdownHook(new Shutdown());
+        //Runtime.getRuntime().addShutdownHook(new Shutdown());
 
         System.out.println(server.getAddress().toString());
 
