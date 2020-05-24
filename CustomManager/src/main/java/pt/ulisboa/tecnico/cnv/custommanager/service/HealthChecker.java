@@ -1,9 +1,15 @@
 package pt.ulisboa.tecnico.cnv.custommanager.service;
 
 import com.amazonaws.services.ec2.model.Instance;
+import pt.ulisboa.tecnico.cnv.custommanager.domain.Request;
+import pt.ulisboa.tecnico.cnv.custommanager.domain.RequestCost;
 import pt.ulisboa.tecnico.cnv.custommanager.domain.RunningInstanceState;
+import pt.ulisboa.tecnico.cnv.custommanager.server.LoadBalancerServer;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Logger;
 
 public class HealthChecker implements Runnable {
@@ -17,7 +23,7 @@ public class HealthChecker implements Runnable {
         // loops through all instances to healthcheck
         List<RunningInstanceState> runningInstances = InstanceSelector.getInstance().getRunningInstanceStates();
         for (RunningInstanceState instanceState : runningInstances) {
-            Instance instance = InstanceSelector.getInstance().getInstanceById(instanceState.getInstanceId())
+            Instance instance = InstanceSelector.getInstance().getInstanceById(instanceState.getInstanceId());
 
             try {
                 int code = SendMessages.getInstance().sendHealthCheck(instance);
@@ -40,9 +46,16 @@ public class HealthChecker implements Runnable {
     }
 
     public void updateInstanceStateFailed(RunningInstanceState instanceState) {
+
         instanceState.incrementHealthCheckStrikes();
         if (instanceState.failed()) {
+
+            Map<String, Request> processingRequests = new HashMap<>();
+            processingRequests.putAll(instanceState.getProcessingRequests());
+
             InstanceSelector.getInstance().replaceFailedInstance(instanceState.getInstanceId());
+
+            LoadBalancerServer.getInstance().repeatProcessingRequests(processingRequests);
         }
     }
 }

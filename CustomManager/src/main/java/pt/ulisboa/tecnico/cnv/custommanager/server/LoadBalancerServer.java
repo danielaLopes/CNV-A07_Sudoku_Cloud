@@ -1,12 +1,11 @@
 package pt.ulisboa.tecnico.cnv.custommanager.server;
 
-import com.sun.net.httpserver.HttpExchange;
+import com.amazonaws.services.ec2.model.Instance;
 import com.sun.net.httpserver.HttpServer;
 
+import pt.ulisboa.tecnico.cnv.custommanager.domain.Request;
 import pt.ulisboa.tecnico.cnv.custommanager.domain.RequestCost;
-import pt.ulisboa.tecnico.cnv.custommanager.domain.RequestState;
 import pt.ulisboa.tecnico.cnv.custommanager.domain.RunningInstanceState;
-import pt.ulisboa.tecnico.cnv.custommanager.handler.ResponseHandler;
 import pt.ulisboa.tecnico.cnv.custommanager.service.*;
 import pt.ulisboa.tecnico.cnv.custommanager.handler.LoadBalancerHandler;
 
@@ -15,6 +14,7 @@ import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -55,13 +55,13 @@ public class LoadBalancerServer {
         // schedules AutoScaler to execute repeatedly every check period of 1 minute
         ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(2);
         // TODO: keep in mind that the period to shut down a machine is 5 and not 1
-        //scheduler.scheduleAtFixedRate(new AutoScaler(), AUTO_SCALER_DELAY, AUTO_SCALER_PERIOD, TimeUnit.MINUTES);
+        scheduler.scheduleAtFixedRate(new AutoScaler(), AUTO_SCALER_DELAY, AUTO_SCALER_PERIOD, TimeUnit.MINUTES);
 
         // schedules Healthcheck to execute repeatedly every check period of 300 seconds
         // TODO: do i need to create a new schedular ?
         //ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
         // TODO: change period to 5
-        //scheduler.scheduleAtFixedRate(new HealthChecker(), HEALTH_CHECK_GRACE_PERIOD, 30, TimeUnit.SECONDS);
+        scheduler.scheduleAtFixedRate(new HealthChecker(), HEALTH_CHECK_GRACE_PERIOD, 30, TimeUnit.SECONDS);
 
         // shutdown everything when LoadBalancer goes down
         //Runtime.getRuntime().addShutdownHook(new Shutdown());
@@ -88,52 +88,64 @@ public class LoadBalancerServer {
         }
     }
 
-    public static void repeatRequest(final HttpExchange t) {
+    /**
+     * When a machine fails, all the requests it was processing are redirectioned to other machines
+     */
+    public static void repeatProcessingRequests(Map<String, Request> processingRequests) {
 
-        _logger.info("Repeating request that exceeded time");
+        for (final Map.Entry<String, Request> request: processingRequests.entrySet()) {
+            Thread thread = new Thread(){
+                public void run(){
+                    solutionRequest(request.getKey(), request.getValue());
+                }
+            };
+            thread.start();
+        }
+    }
 
-        // Get the query.
-        final String query = t.getRequestURI().getQuery();
-        _logger.info("> Query:\t" + query);
+    public static void solutionRequest(String requestUuid, Request request) {
 
-        String solution = null;
+        RunningInstanceState instanceState = InstanceSelector.getInstance().selectInstance(request.getCost());
+        Instance instance = InstanceSelector.getInstance().getInstanceById(instanceState.getInstanceId());
 
-        //solution = "ola".getBytes();
+        // Sends request for chosen instance to solve sudoku
+        instanceState.addNewRequest(requestUuid, request);
 
-        // check if request is in cache
-        //solution = RequestCostCache.getInstance().get(query);
-        if (solution != null) {
+        String response = null;
+        try {
+            response = SendMessages.getInstance().sendSudokuRequest(instance, request.getQuery(), request.getBody());
+        }
+        catch(IOException e) {
+            _logger.info(e + " Request could not be processed by instance " +
+                    instanceState.getInstanceId() + " . Repeating it...");
+            solutionRequest(requestUuid, request);
+        }
+
+        if (response != null) {
+            String fields[] = response.split(":");
+            String solution = fields[0];
+            Long fieldLoads = Long.parseLong(fields[1]);
+            RequestCost actualCost = new RequestCost(fieldLoads);
+
+            // saves requestCost return by server in the cache
+            RequestCostCache.getInstance().put(request.getQuery(), actualCost);
+
+            // Updates the state of the instance that performed this request
+            instanceState.updateTotalFieldLoads(fieldLoads);
+            instanceState.removeRequest(requestUuid);
+
             try {
-                SendMessages.getInstance().sendClientResponse(t, solution);
+                SendMessages.getInstance().sendClientResponse(request.getClientCommunication(), solution);
             }
             catch(IOException e) {
-                _logger.warning(e.getMessage());
+                // TODO: do anything in case this fails????
+                _logger.info("Could not send response to client.");
             }
         }
-        // TODO: call WebServer to start processing request
         else {
-            /*// Estimate request cost
-            // RequestCostEstimator contains pre loaded data to help estimate the cost of a request
-            RequestCost cost = RequestCostEstimator.estimateCost(query);
-            // Choose instance to solve sudoku based on the estimated cost of the request
-            // default is choosing always instance with less CPU -> this leads to more machines running at less CPU
-            // should we estimate %CPU based on the cost of a request
-            //solution = InstanceSelector.getInstance().selectInstance(cost).solveSudoku();
-            InstanceSelector.getInstance().selectInstance(cost);
-            // Sends request for chosen instance to solve sudoku
-            // Do this asynchronously ?? timeout??
-            //solution = instance.solveSudoku();*/
-            //String requestUuid = generateRequestUuid();
-            String requestUuid = "uuid";
-            // TODO: these are dummy values
-            String instanceId = "instance x";
-            int expectedTime = 3000;
-            RequestState requestState = new RequestState(t, query, instanceId, expectedTime);
-            // TODO: see what's best: have a unique id for each request
-            // TODO: or map it with the query so that we don't repeat equivalent
-            // TODO: requests and avoid overloading servers
-            // TODO: use query without the algorithm, since the result is the same ?????
-            RequestTracker.getInstance().add(requestUuid, requestState);
+            _logger.info("Request could not be processed by instance " +
+                    instanceState.getInstanceId() + " . Repeating it...");
+            solutionRequest(requestUuid, request);
         }
     }
 
@@ -158,12 +170,16 @@ public class LoadBalancerServer {
     public static void orderInstancesTest() {
         List<RunningInstanceState> states = new ArrayList<>();
         RunningInstanceState instance1 = new RunningInstanceState("instance1");
-        instance1.addNewRequest("request1", new RequestCost(3000L));
+        instance1.addNewRequest("request1",
+                new Request(new RequestCost(3000L), null, null, null));
         RunningInstanceState instance2 = new RunningInstanceState("instance2");
-        instance2.addNewRequest("request2", new RequestCost(1000L));
+        instance2.addNewRequest("request2",
+                new Request(new RequestCost(1000L), null, null, null));
         RunningInstanceState instance3 = new RunningInstanceState("instance3");
-        instance3.addNewRequest("request3", new RequestCost(500L));
-        instance3.addNewRequest("request4", new RequestCost(500L));
+        instance3.addNewRequest("request3",
+                new Request(new RequestCost(500L), null, null, null));
+        instance3.addNewRequest("request4",
+                new Request(new RequestCost(500L), null, null, null));
 
         states.add(instance1);
         states.add(instance2);

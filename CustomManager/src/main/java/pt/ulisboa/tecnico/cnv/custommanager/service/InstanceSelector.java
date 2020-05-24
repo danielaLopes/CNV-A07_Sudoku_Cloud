@@ -268,12 +268,12 @@ public class InstanceSelector {
         }
     }
 
-    public List<RunningInstanceState> selectActiveInstanceSates() {
+    public List<RunningInstanceState> selectActiveInstanceStates() {
 
         List<RunningInstanceState> instanceStates = new ArrayList<>();
         for (RunningInstanceState instanceState : _runningInstances.values()) {
-            // only selects machines that weren't scheduled to shutdown
-            if (instanceState.shuttingDown() == false) {
+            // only selects machines that weren't scheduled to shutdown and fully initialized
+            if (instanceState.shuttingDown() == false && instanceState.isInitialized()) {
                 instanceStates.add(instanceState);
             }
         }
@@ -297,7 +297,7 @@ public class InstanceSelector {
         while (_runningInstances.isEmpty()) {}
 
         // sorts list of running instances to choose best instance to handle request
-        List<RunningInstanceState> instanceStates = selectActiveInstanceSates();
+        List<RunningInstanceState> instanceStates = selectActiveInstanceStates();
 
         Collections.sort(instanceStates, RunningInstanceState.LEAST_CPU_AVAILABLE_COMPARATOR);
         // TODO: see if we should choose first or last
@@ -321,7 +321,7 @@ public class InstanceSelector {
         if (_runningInstances.isEmpty()) { return null; }
 
         // sorts list of running instances to choose least busy instance
-        List<RunningInstanceState> instanceStates = selectActiveInstanceSates();
+        List<RunningInstanceState> instanceStates = selectActiveInstanceStates();
 
         // select idle instances
         List<RunningInstanceState> idleInstanceStates = new ArrayList<>();
@@ -342,7 +342,7 @@ public class InstanceSelector {
         if (_runningInstances.isEmpty()) { return null; }
 
         // sorts list of running instances to choose least busy instance
-        List<RunningInstanceState> instanceStates = selectActiveInstanceSates();
+        List<RunningInstanceState> instanceStates = selectActiveInstanceStates();
 
         // select overloaded instances
         List<RunningInstanceState> overloadedInstanceStates = new ArrayList<>();

@@ -13,7 +13,7 @@ public class RunningInstanceState {
     // Keeps track of all requests currently being processed by this instance
     // Maps each request to the corresponding request cost
     // TODO: does it require to be concurrent
-    private ConcurrentHashMap<String, RequestCost> _processingRequests = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<String, Request> _processingRequests = new ConcurrentHashMap<>();
     // TODO: put as atomic
     private int _estimatedCpu;
 
@@ -52,7 +52,7 @@ public class RunningInstanceState {
 
     public boolean isInitialized() { return _initialized; }
 
-    public void initialized() { _initialized = true; }
+    public void setInitialized() { _initialized = true; }
 
     public boolean shuttingDown() { return _shuttingDown; }
 
@@ -75,29 +75,35 @@ public class RunningInstanceState {
 
     public void incrementHealthCheckStrikes() { _nHealthCheckStrikes++; }
 
-    public void resetHealthCheckStrikes() { _nHealthCheckStrikes = 0; }
+    // if it is the first time that a machine healthchecks, then it is considered initialized
+    public void resetHealthCheckStrikes() {
+        _nHealthCheckStrikes = 0;
+        if (_initialized == false) setInitialized();
+    }
 
     public boolean failed() { return _nHealthCheckStrikes == 3; }
 
-    // TODO: query or uuid?
-    public void addNewRequest(String query, RequestCost cost) {
+    public ConcurrentMap<String, Request> getProcessingRequests() { return _processingRequests; }
 
-        _processingRequests.put(query, cost);
-        _estimatedCpu += cost.getCpu();
+    // TODO: query or uuid?
+    public void addNewRequest(String query, Request request) {
+
+        _processingRequests.put(query, request);
+        _estimatedCpu += request.getCost().getCpu();
     }
 
-    public void removeRequest(String query) {
+    public void removeRequest(String uuid) {
 
-        _estimatedCpu -= _processingRequests.get(query).getCpu();
-        _processingRequests.remove(query);
+        _estimatedCpu -= _processingRequests.get(uuid).getCost().getCpu();
+        _processingRequests.remove(uuid);
 
     }
 
     // TODO: should we do this on the comparator or the getLatestFieldLoads()
     public Long calculateRequestCostSum() {
         Long totalEstimatedCost = 0L;
-        for (RequestCost cost : _processingRequests.values()) {
-            totalEstimatedCost += cost.getFieldLoads();
+        for (Request request : _processingRequests.values()) {
+            totalEstimatedCost += request.getCost().getFieldLoads();
         }
         return totalEstimatedCost;
     }

@@ -19,7 +19,7 @@ import java.util.logging.Logger;
  * Every request is uniquely identified
  */
 public class RequestTracker {
-
+    // TODO: not currently being used
     private static RequestTracker _instance = null;
 
     private Logger _logger = Logger.getLogger(InstanceSelector.class.getName());
@@ -71,11 +71,11 @@ public class RequestTracker {
                 catch(InterruptedException e) {
                     _logger.warning(e.getMessage());
                 }
-                sweepRequests();
+                //sweepRequests();
             }
         }
 
-        public void sweepRequests() {
+        /*public void sweepRequests() {
             Iterator<Map.Entry<String, RequestState>> iter = _processingRequests.entrySet().iterator();
             while (iter.hasNext()) {
                 Map.Entry<String, RequestState> r = iter.next();
@@ -87,6 +87,6 @@ public class RequestTracker {
                     LoadBalancerServer.repeatRequest(clientCommunication);
                 }
             }
-        }
+        }*/
     }
 }
