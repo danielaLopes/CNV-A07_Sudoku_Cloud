@@ -24,8 +24,8 @@ public class LoadBalancerHandler implements HttpHandler {
 
     @Override
     public void handle(final HttpExchange t) throws IOException {
-        try {
-            _logger.info("Handling new request");
+
+        _logger.info("Handling new request");
 
         // Get the query.
         final String query = t.getRequestURI().getQuery();
