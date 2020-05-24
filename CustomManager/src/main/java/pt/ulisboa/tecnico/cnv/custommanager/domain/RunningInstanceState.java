@@ -52,7 +52,7 @@ public class RunningInstanceState {
 
     public boolean isInitialized() { return _initialized; }
 
-    public void setInitialized() { _initialized = true; }
+    public void setInitialized() { _logger.info("SetInitialized()"); _initialized = true; }
 
     public boolean shuttingDown() { return _shuttingDown; }
 

@@ -12,6 +12,7 @@ import com.amazonaws.services.ec2.model.*;
 import pt.ulisboa.tecnico.cnv.custommanager.domain.RequestCost;
 import pt.ulisboa.tecnico.cnv.custommanager.domain.RunningInstanceState;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -108,9 +109,36 @@ public class InstanceSelector {
 
         List<RunningInstanceState> instanceStates = new ArrayList<>(_runningInstances.values());
         for (RunningInstanceState instanceState : instanceStates) {
-            if (instanceState.isInitialized() == false) return true;
+            if (instanceState.isInitialized() == false && checkInstanceInitialized(instanceState) == false) {
+                _logger.info("Instance is still initializing...");
+                return true;
+            }
         }
         return false;
+    }
+
+    public static boolean checkInstanceInitialized(RunningInstanceState instanceState) {
+
+        getInstance()._logger.info("Checking if instance is initialized");
+
+        Instance instance = getInstance().getInstanceById(instanceState.getInstanceId());
+
+        int code = 0;
+        try {
+            getInstance()._logger.info("CODE1: " + code);
+            code = SendMessages.getInstance().sendHealthCheck(instance);
+            getInstance()._logger.info("CODE2: " + code);
+        }
+        catch(IOException e) {
+            return false;
+        }
+
+        if (code == 200) {
+            instanceState.setInitialized();
+            getInstance()._logger.info("Instance is initialized!");
+            return true;
+        }
+        else return false;
     }
 
     // -------------------------------------------------------------
@@ -317,7 +345,9 @@ public class InstanceSelector {
         for (RunningInstanceState instanceState : instanceStates) {
             // if machine has enough CPU available
             // chooses the machine with least cpu available that has enough available cpu to process the request
+            _logger.info("Checking if " + instanceState.getInstanceId() + " has enough CPU available");
             if (instanceState.getTotalCpuAvailable() >= cost.getCpu()) {
+                _logger.info(instanceState.getInstanceId() + " has enough CPU available and was choosen");
                 return instanceState;
             }
         }
