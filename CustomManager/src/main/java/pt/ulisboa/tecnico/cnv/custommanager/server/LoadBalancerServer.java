@@ -44,7 +44,7 @@ public class LoadBalancerServer {
 
     public static void main(final String[] args) throws Exception {
 
-        final HttpServer server = HttpServer.create(new InetSocketAddress(80), 0);
+        final HttpServer server = HttpServer.create(new InetSocketAddress(8005), 0);
         // main handler that receives requests from sudoku solver website
         server.createContext("/sudoku", new LoadBalancerHandler());
         // handler that receives responses to requests from WebServer instances
@@ -55,7 +55,7 @@ public class LoadBalancerServer {
         // schedules AutoScaler to execute repeatedly every check period of 1 minute
         ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(2);
         // TODO: keep in mind that the period to shut down a machine is 5 and not 1
-        scheduler.scheduleAtFixedRate(new AutoScaler(), AUTO_SCALER_DELAY, AUTO_SCALER_PERIOD, TimeUnit.MINUTES);
+        scheduler.scheduleAtFixedRate(new AutoScaler(), 0, AUTO_SCALER_PERIOD, TimeUnit.MINUTES);
 
         // schedules Healthcheck to execute repeatedly every check period of 300 seconds
         // TODO: do i need to create a new schedular ?
@@ -68,7 +68,7 @@ public class LoadBalancerServer {
 
         System.out.println(server.getAddress().toString());
 
-        orderInstancesTest();
+        //orderInstancesTest();
 
         //gatherAllInstancesTest();
         //startInstanceTest();
