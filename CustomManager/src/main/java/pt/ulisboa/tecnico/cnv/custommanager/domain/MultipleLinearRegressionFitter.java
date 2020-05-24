@@ -7,7 +7,8 @@ import java.util.List;
 
 public class MultipleLinearRegressionFitter {
 
-    // dependent variable is a list of pairs (s,u) where s represents the puzzle size and u the number of unassigned
+    // dependent variable is a list of pairs (s,u,a) where s represents the puzzle size, u the number of unassigned, a the algorithm
+    // a = 1 => BFS, a = 2 => DLX , a = 3 => CP
     private List<double[]> dependentVariable = new ArrayList<double[]>();
 
     // target will be a list of numbers representing the number of field loads or the request time
@@ -44,3 +45,4 @@ public class MultipleLinearRegressionFitter {
     }
 
 }
+
