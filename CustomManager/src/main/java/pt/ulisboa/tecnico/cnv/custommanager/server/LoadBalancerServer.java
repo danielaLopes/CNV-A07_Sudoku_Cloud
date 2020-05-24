@@ -106,6 +106,20 @@ public class LoadBalancerServer {
     public static void solutionRequest(String requestUuid, Request request) {
 
         RunningInstanceState instanceState = InstanceSelector.getInstance().selectInstance(request.getCost());
+        if (instanceState == null) {
+            // TODO: see if this can be problematic
+            // waits until new instances are initialized
+            while (InstanceSelector.getInstance().instancesInitializing() == true) {
+                _logger.info("Waiting for new instances to be initialized!");
+                try {
+                    Thread.sleep(5000); // 5 seconds
+                }
+                catch(InterruptedException e) {
+                    _logger.warning("Failed to wait for instances to initialize");
+                }
+            }
+            instanceState = InstanceSelector.getInstance().selectInstance(request.getCost());
+        }
         Instance instance = InstanceSelector.getInstance().getInstanceById(instanceState.getInstanceId());
 
         // Sends request for chosen instance to solve sudoku

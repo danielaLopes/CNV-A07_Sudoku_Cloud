@@ -31,8 +31,6 @@ public class SendMessages {
 
     public static void sendClientResponse(final HttpExchange t, String solution) throws IOException {
 
-        _logger.info("SOLUTION: " + solution);
-
         final Headers hdrs = t.getResponseHeaders();
 
         hdrs.add("Content-Type", "application/json");
