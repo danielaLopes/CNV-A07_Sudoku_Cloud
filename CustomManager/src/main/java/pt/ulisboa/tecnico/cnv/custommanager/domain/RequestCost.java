@@ -1,16 +1,16 @@
 package pt.ulisboa.tecnico.cnv.custommanager.domain;
 
-import com.sun.net.httpserver.HttpExchange;
-
 public class RequestCost {
 
   private Long fieldLoads;
   private int cpu;
+  private int time;
 
   public RequestCost(Long fieldLoads) {
 
       this.fieldLoads = fieldLoads;
       // TODO: calculate cpu from fieldLoads
+      // TODO: calculate time from fieldLoads
   }
 
   public void setFieldLoads(Long fieldLoads) {
@@ -28,4 +28,6 @@ public class RequestCost {
     public int getCpu() {
         return this.cpu;
     }
+
+    public int getTime() { return this.time; }
 }

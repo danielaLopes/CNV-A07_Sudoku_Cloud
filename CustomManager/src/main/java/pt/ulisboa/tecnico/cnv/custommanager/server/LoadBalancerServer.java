@@ -113,7 +113,8 @@ public class LoadBalancerServer {
 
         String response = null;
         try {
-            response = SendMessages.getInstance().sendSudokuRequest(instance, request.getQuery(), request.getBody());
+            response = SendMessages.getInstance().sendSudokuRequest(
+                    instance, request.getQuery(), request.getBody(), request.getCost().getTime());
         }
         catch(IOException e) {
             _logger.info(e + " Request could not be processed by instance " +
