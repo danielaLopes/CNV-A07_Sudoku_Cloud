@@ -25,23 +25,34 @@ public class RunningInstanceState {
     private final Long IDLE_FIELD_LOADS = 1000L;
     private final Long OVERLOADED_FIELD_LOADS = 10000L;
 
+    // machines can only start receiving requests once they are initialized
+    private boolean _initialized;
     private boolean _shuttingDown;
     private ScheduledFuture<?> _scheduledShutdownFuture;
     private final int CHECK_SHUTDOWN_PERIOD = 30; // seconds
+
+    // machine is terminated when it fails to healthcheck thrice
+    private int _nHealthCheckStrikes;
 
     private static Logger _logger = Logger.getLogger(RunningInstanceState.class.getName());
 
     public RunningInstanceState(String instanceId) {
         _instanceId = instanceId;
         _estimatedCpu = 0;
+        _initialized = false;
         _shuttingDown = false;
         _totalFieldLoads = 0L;
         _latestFieldLoads = 0L;
+        _nHealthCheckStrikes = 0;
     }
 
     public String getInstanceId() {
         return _instanceId;
     }
+
+    public boolean isInitialized() { return _initialized; }
+
+    public void initialized() { _initialized = true; }
 
     public boolean shuttingDown() { return _shuttingDown; }
 
@@ -61,6 +72,12 @@ public class RunningInstanceState {
     public void resetFieldLoads() {
         _latestFieldLoads = 0L;
     }
+
+    public void incrementHealthCheckStrikes() { _nHealthCheckStrikes++; }
+
+    public void resetHealthCheckStrikes() { _nHealthCheckStrikes = 0; }
+
+    public boolean failed() { return _nHealthCheckStrikes == 3; }
 
     // TODO: query or uuid?
     public void addNewRequest(String query, RequestCost cost) {

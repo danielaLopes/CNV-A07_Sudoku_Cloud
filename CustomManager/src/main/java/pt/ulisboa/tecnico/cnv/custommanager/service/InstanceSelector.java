@@ -84,6 +84,10 @@ public class InstanceSelector {
         return _runningInstances.get(instanceId);
     }
 
+    public List<RunningInstanceState> getRunningInstanceStates() {
+        return new ArrayList<>(_runningInstances.values());
+    }
+
     public List<Instance> getRunningInstances() {
         List<Instance> instances = new ArrayList<>();
         for (String instanceId : _runningInstances.keySet()) {
@@ -275,6 +279,11 @@ public class InstanceSelector {
         }
 
         return instanceStates;
+    }
+
+    public void replaceFailedInstance(String instanceId) {
+        terminateInstance(instanceId);
+        startInstances(1);
     }
 
     // -------------------------------------------------------------
