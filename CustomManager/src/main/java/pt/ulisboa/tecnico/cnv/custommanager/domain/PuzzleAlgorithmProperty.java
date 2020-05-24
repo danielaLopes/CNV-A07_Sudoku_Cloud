@@ -26,24 +26,32 @@ public class PuzzleAlgorithmProperty {
     }
 
     public Long computeEstimatedFieldLoads(Integer requestUnassigned) {
+
         Long estimatedFieldLoads = fieldLoads;
+        try {
+            // first we find out to which interval it belongs
+            for (int i = 0; i < intervalsLimits.size(); i++) {
+                if (intervalsLimits.get(i) > requestUnassigned) {
 
-        // first we find out to which interval it belongs
-        for(int i = 0; i < intervalsLimits.size(); i++) {
-            if(intervalsLimits.get(i) > requestUnassigned) {
+                    int previousIntervalindex = i - 1;
+                    if (previousIntervalindex < 0) previousIntervalindex = 0;
 
-                int previousIntervalindex = i-1;
-                if(previousIntervalindex < 0) previousIntervalindex = 0;
-
-                Integer intervalGap = requestUnassigned - intervalsLimits.get(previousIntervalindex);
-                // if it belongs to the current interval, we only accumulate part of the interval
-                estimatedFieldLoads += (intervalsAverageIncrease.get(i) * intervalGap + intervalsAdjustments.get(i));
-                break;
+                    Integer intervalGap = requestUnassigned - intervalsLimits.get(previousIntervalindex);
+                    // if it belongs to the current interval, we only accumulate part of the interval
+                    estimatedFieldLoads += (intervalsAverageIncrease.get(i) * intervalGap + intervalsAdjustments.get(i));
+                    break;
+                }
+                int previousLimit;
+                if(i == 0) previousLimit = 0;
+                else previousLimit = intervalsLimits.get(i-1);
+                // if it belongs to the next interval, we accumulate the full interval
+                estimatedFieldLoads += ((intervalsAverageIncrease.get(i) * (intervalsLimits.get(i) - previousLimit)) + intervalsAdjustments.get(i));
             }
-            // if it belongs to the next interval, we accumulate the full interval
-            estimatedFieldLoads += (intervalsAverageIncrease.get(i) * intervalsLimits.get(i) + intervalsAdjustments.get(i));
+        } catch (Exception e) {
+            e.printStackTrace();
         }
-
+        System.out.println("prediction:" + estimatedFieldLoads);
         return estimatedFieldLoads;
+
     }
 }
