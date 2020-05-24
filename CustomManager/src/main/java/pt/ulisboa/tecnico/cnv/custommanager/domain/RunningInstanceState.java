@@ -163,6 +163,7 @@ public class RunningInstanceState {
             _logger.info("Checking if it is possible to shutdown instance " + _instanceId);
             // instance only shutdowns when there are no requests to fulfill
             if (_processingRequests.size() == 0) {
+                _logger.info("Scheduled shutting down instance " + _instanceId);
                 _scheduledShutdownFuture.cancel(false);
                 InstanceSelector.getInstance().terminateInstance(_instanceId);
             }
