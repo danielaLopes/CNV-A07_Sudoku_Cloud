@@ -4,16 +4,17 @@ import com.amazonaws.services.ec2.model.Instance;
 import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
 
-import java.io.DataInputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
+import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.util.logging.Logger;
 
 public class SendMessages {
 
     private static SendMessages _instance = null;
+
+    private static Logger _logger = Logger.getLogger(SendMessages.class.getName());
 
     private static final int CONNECTION_TIMEOUT = 6000;
 
@@ -26,13 +27,12 @@ public class SendMessages {
 
     private SendMessages() {}
 
-    public static void sendClientResponse(final HttpExchange t, byte[] solution) throws IOException {
+    public static void sendClientResponse(final HttpExchange t, String solution) throws IOException {
+
+        _logger.info("SOLUTION: " + solution);
 
         final Headers hdrs = t.getResponseHeaders();
 
-        //t.sendResponseHeaders(200, responseFile.length());
-
-        ///hdrs.add("Content-Type", "image/png");
         hdrs.add("Content-Type", "application/json");
 
         hdrs.add("Access-Control-Allow-Origin", "*");
@@ -41,50 +41,98 @@ public class SendMessages {
         hdrs.add("Access-Control-Allow-Methods", "POST, GET, HEAD, OPTIONS");
         hdrs.add("Access-Control-Allow-Headers", "Origin, Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers");
 
-        t.sendResponseHeaders(200, solution.toString().length());
+        t.sendResponseHeaders(200, solution.length());
 
         final OutputStream os = t.getResponseBody();
         OutputStreamWriter osw = new OutputStreamWriter(os, "UTF-8");
-        osw.write(solution.toString());
+        osw.write(solution);
         osw.flush();
         osw.close();
 
         os.close();
 
-        System.out.println("> Sent response to " + t.getRemoteAddress().toString());
+        _logger.info("Sent response to " + t.getRemoteAddress().toString());
     }
 
     //public static int sendHealthCheck(Instance instance, String request) throws Exception {
-    public static int sendHealthCheck(Instance instance) throws Exception {
+    public static int sendHealthCheck(Instance instance) throws IOException {
 
-        HttpURLConnection connection = null;
-
-        //String urlString = "http://" + instance.getPublicIpAddress() + ":8000/ping?" + request;
         String urlString = "http://" + instance.getPublicIpAddress() + ":8000/ping";
 
+        return getResponseCode(sendServerRequest("GET", urlString, null));
+    }
+
+    public static int sendLocalHealthCheck() throws IOException  {
+
+        String urlString = "http://127.0.0.1:8000/ping";
+
+        return getResponseCode(sendServerRequest("GET", urlString, null));
+    }
+
+    public static String sendSudokuRequest(Instance instance, String request, byte[] body) throws IOException {
+
+        String urlString = "http://" + instance.getPublicIpAddress() + ":8000/sudoku?" + request;
+
+        return getResponse(sendServerRequest("POST", urlString, body));
+    }
+
+    public static String sendLocalSudokuRequest(String request, byte[] body) throws IOException  {
+
+        String urlString = "http://127.0.0.1:8000/sudoku?" + request;
+        _logger.info("urlString: " + urlString);
+
+        return getResponse(sendServerRequest("POST", urlString, body));
+    }
+
+    public static HttpURLConnection sendServerRequest(String method, String urlString, byte[] body) throws IOException {
+
         URL url = new URL(urlString);
-        connection = (HttpURLConnection) url.openConnection();
-        connection.setRequestMethod("GET");
+        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+        connection.setRequestMethod(method);
 
-        /*connection.setUseCaches(false);
-        connection.setDoInput(true);
+        if(method.equals("POST")) {
 
-        connection.setReadTimeout(1000*60*15);*/
-        connection.setConnectTimeout(CONNECTION_TIMEOUT);
+            connection.setDoOutput(true);
 
-        //Get Response
-        DataInputStream is = new DataInputStream((connection.getInputStream()));
-
-        byte[] buffer = new byte[connection.getContentLength()];
-        is.readFully(buffer);
-
+            try(OutputStream os = connection.getOutputStream()) {
+                os.write(body, 0, body.length);
+            }
+        }
+        //connection.setReadTimeout(1000*60*15);
+        //connection.setConnectTimeout(CONNECTION_TIMEOUT);
 
         if (connection != null) {
             connection.disconnect();
         }
 
-        int code = connection.getResponseCode();
+        return connection;
+    }
 
-        return code;
+    public static String getResponse(HttpURLConnection connection) throws IOException {
+
+        if (getResponseCode(connection) == 200) {
+
+            BufferedReader in = new BufferedReader(
+                    new InputStreamReader(
+                            connection.getInputStream()));
+
+            StringBuilder response = new StringBuilder();
+            String currentLine;
+
+            while ((currentLine = in.readLine()) != null)
+                response.append(currentLine);
+
+            in.close();
+
+            return response.toString();
+        }
+        else {
+            return null;
+        }
+    }
+
+    public static int getResponseCode(HttpURLConnection connection) throws IOException {
+
+        return connection.getResponseCode();
     }
 }

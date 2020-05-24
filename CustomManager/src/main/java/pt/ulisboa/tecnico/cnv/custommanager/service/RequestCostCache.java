@@ -1,33 +1,33 @@
 package pt.ulisboa.tecnico.cnv.custommanager.service;
 
+import pt.ulisboa.tecnico.cnv.custommanager.domain.RequestCost;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Maps a request query (without the algorithm to the corresponding
- * solution of the most recent requests so that recent equivalent
- * requests are not repeated.
+ * Maps a request query to the respective instrumented values from the server.
  * Has a random eviction policy.
  */
-public class RecentRequestsCache {
+public class RequestCostCache {
 
-    private static RecentRequestsCache _instance = null;
+    private static RequestCostCache _instance = null;
 
     private static final int MAX_SIZE = 50;
-    private static final ConcurrentHashMap<String, byte[]> _cache = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<String, RequestCost> _cache = new ConcurrentHashMap<>();
 
-    private RecentRequestsCache() {}
+    private RequestCostCache() {}
 
-    public static RecentRequestsCache getInstance() {
+    public static RequestCostCache getInstance() {
         if (_instance == null) {
-            _instance = new RecentRequestsCache();
+            _instance = new RequestCostCache();
         }
         return _instance;
     }
 
-    public static synchronized void add(String key, byte[] response) {
+    public static synchronized void put(String key, RequestCost response) {
         if (_cache.size() >= MAX_SIZE) {
             _cache.put(key, response);
         }
@@ -41,7 +41,7 @@ public class RecentRequestsCache {
         _cache.remove(key);
     }
 
-    public static byte[] get(String key) {
+    public static RequestCost get(String key) {
         return _cache.get(key);
     }
 

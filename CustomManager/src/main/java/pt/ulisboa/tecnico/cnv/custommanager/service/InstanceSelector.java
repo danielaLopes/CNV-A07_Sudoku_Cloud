@@ -84,12 +84,20 @@ public class InstanceSelector {
         return _runningInstances.get(instanceId);
     }
 
+    public List<RunningInstanceState> getRunningInstanceStates() {
+        return new ArrayList<>(_runningInstances.values());
+    }
+
     public List<Instance> getRunningInstances() {
         List<Instance> instances = new ArrayList<>();
         for (String instanceId : _runningInstances.keySet()) {
             instances.add(_instances.get(instanceId));
         }
         return instances;
+    }
+
+    public Instance getInstanceById(String instanceId) {
+        return _instances.get(instanceId);
     }
 
     // -------------------------------------------------------------
@@ -119,7 +127,7 @@ public class InstanceSelector {
         }
     }
 
-    public synchronized void assertRunningInstancesBetweenMinMax() {
+    public synchronized int assertRunningInstancesBetweenMinMax() {
         int nRunningInstances = _runningInstances.size();
         if (nRunningInstances > MAX_INSTANCES) {
             int numToDestroy = nRunningInstances - MAX_INSTANCES;
@@ -130,6 +138,7 @@ public class InstanceSelector {
             _logger.info("Too few instances running (" + nRunningInstances + ") launching " + numToLaunch);
             startInstances(numToLaunch);
         }
+        return _runningInstances.size();
     }
 
     public void startInstances(int n) {
@@ -145,10 +154,10 @@ public class InstanceSelector {
 
         RunInstancesRequest runInstancesRequest = new RunInstancesRequest();
 
-        runInstancesRequest.withImageId("ami-09fe936ae4a44698e")
+        runInstancesRequest.withImageId("ami-0b21d61cb9685f540")
                             .withMinCount(n)
                             .withMaxCount(n)
-                            .withKeyName("CNV")
+                            .withKeyName("CNV-proj")
                             .withSecurityGroupIds("sg-0bf52fd8f7cb92397")
                             .withInstanceType("t2.micro");
 
@@ -166,40 +175,30 @@ public class InstanceSelector {
         if (nRunningInstances - numInstances < MIN_INSTANCES) {
             return;
         } else {
-            _logger.info("Going to destroy " + numInstances + " out of " + nRunningInstances);
+            _logger.info("Going to remove " + numInstances + " out of " + nRunningInstances);
         }
 
-        // TODO: removeInstance
-        /*List<InstanceState> instancesList = new ArrayList<>(_instances.values());
-        Collections.sort(instancesList, InstanceState.COMPARATOR_BY_USAGE);
+        List<RunningInstanceState> instanceStates = new ArrayList<>(_runningInstances.values());
+        // TODO: check if it's last on the list
+        Collections.sort(instanceStates, RunningInstanceState.LEAST_CPU_AVAILABLE_COMPARATOR);
 
-        int numRemoved = 0;
-        for (InstanceState instance: instancesList) {
-            if (!instance.isShuttingDown()) {
-                numRemoved++;
-                logger.info("Scheduling shutdown for instance " + instance.getInstanceId() + " with sage of " + instance.getUsageRatio());
-                instance.scheduleShutdown();
-            }
-            if (numRemoved == numInstances) {
-                return;
-            }
-        }*/
+        List<RunningInstanceState> instancesToRemove = instanceStates.subList(
+                instanceStates.size() - numInstances, instanceStates.size());
+        // for debug
+        for (RunningInstanceState s : instanceStates) _logger.info("instanceStates " + s.getTotalCpuOccupied());
+        for (RunningInstanceState s : instancesToRemove) _logger.info("instancesToRemove " + s.getTotalCpuOccupied());
+
+        for (RunningInstanceState instanceState : instancesToRemove) {
+
+            removeInstance(instanceState);
+        }
     }
 
-    public void removeInstance(String instanceId) {
-        // since we can decide to remove a non running instance, we
-        // need to check if it's on the running Instances
-        if (_runningInstances.containsKey(instanceId)) {
-            _runningInstances.remove(instanceId);
-        }
-        _instances.remove(instanceId);
+    public void removeInstance(RunningInstanceState instanceState) {
 
-        StopInstancesRequest stopInstancesRequest = new StopInstancesRequest();
-        stopInstancesRequest.withInstanceIds(instanceId);
-
-        _ec2.stopInstances(stopInstancesRequest);
-
-        _logger.info("Removing instance " + instanceId);
+        _logger.info("Scheduling shutdown for instance " + instanceState.getInstanceId() +
+                " with cpu of " + instanceState.getTotalCpuOccupied());
+        instanceState.scheduleShutdown();
     }
 
     public void terminateInstance(String instanceId) {
@@ -269,49 +268,106 @@ public class InstanceSelector {
         }
     }
 
+    public List<RunningInstanceState> selectActiveInstanceSates() {
+
+        List<RunningInstanceState> instanceStates = new ArrayList<>();
+        for (RunningInstanceState instanceState : _runningInstances.values()) {
+            // only selects machines that weren't scheduled to shutdown
+            if (instanceState.shuttingDown() == false) {
+                instanceStates.add(instanceState);
+            }
+        }
+
+        return instanceStates;
+    }
+
+    public void replaceFailedInstance(String instanceId) {
+        terminateInstance(instanceId);
+        startInstances(1);
+    }
+
     // -------------------------------------------------------------
     // -----  Methods to help the LoadBalancer choose which    -----
     // -----            instance to run a request              -----
     // -------------------------------------------------------------
 
-    public Instance selectInstance(RequestCost cost) {
+    public synchronized RunningInstanceState selectInstance(RequestCost cost) {
 
         // If there are requests before machines are up and running, it waits
         while (_runningInstances.isEmpty()) {}
 
         // sorts list of running instances to choose best instance to handle request
-        List<RunningInstanceState> instanceStates = new ArrayList<>(_runningInstances.values());
-        // TODO: comparators for running instances state
-        //Collections.sort(instanceStates, InstanceState.COMPARATOR_BY_USAGE);
-        // Easy
-        /*if (< cost < ) {
-            chooseMostOccupiedMachineWithEnoughCPU();
+        List<RunningInstanceState> instanceStates = selectActiveInstanceSates();
+
+        Collections.sort(instanceStates, RunningInstanceState.LEAST_CPU_AVAILABLE_COMPARATOR);
+        // TODO: see if we should choose first or last
+        for (RunningInstanceState instanceState : instanceStates) {
+            // if machine has enough CPU available
+            // chooses the machine with least cpu available that has enough available cpu to process the request
+            if (instanceState.getTotalCpuAvailable() >= cost.getCpu()) {
+                return instanceState;
+            }
         }
-        // Medium or Hard
-        else {
-            chooseMachineWithLeastLoad(); // machine is going to be 100% in both difficulties
-        }*/
-        
-        _logger.info("Selected instance to process request");
-
-        return null;
-    }
-
-    public Instance chooseMostOccupiedMachineWithEnoughCPU(RequestCost cost) {
-        _logger.info("Choosing best machine for processing request with cost: " + cost.getFieldLoads());
-        //for (Map.Entry<String, RunningInstanceState> i : _runningInstances.entrySet()) {
-            //i.getValue().getTotalCpu();
-            //_cloudWatch.getMetricData().toString();
-        //}
-        return null;
-    }
-
-    public void getRunningInstanceCpu(String id) {
-        //_instances.get(id).getCpuOptions().
+        // if no machine has enough CPU available, chooses the one with most CPU available, even if that's above 100
+        return instanceStates.get(instanceStates.size() - 1);
     }
 
     // -------------------------------------------------------------
-    // ----- Methods to help the AutoScaler to choose machine  -----
+    // ----- Methods to help the AutoScaler to choose machines -----
     // -------------------------------------------------------------
+    public List<RunningInstanceState> selectInstancesToTerminate() {
 
+        // If there are no instances, does not choose any instance to terminate
+        if (_runningInstances.isEmpty()) { return null; }
+
+        // sorts list of running instances to choose least busy instance
+        List<RunningInstanceState> instanceStates = selectActiveInstanceSates();
+
+        // select idle instances
+        List<RunningInstanceState> idleInstanceStates = new ArrayList<>();
+        for (RunningInstanceState instanceState : instanceStates) {
+            if (instanceState.isIdle()) {
+                idleInstanceStates.add(instanceState);
+            }
+        }
+        Collections.sort(instanceStates, RunningInstanceState.LEAST_LATEST_FIELD_LOADS_COMPARATOR);
+        // TODO: see if this is correct
+
+        return idleInstanceStates;
+    }
+
+    public List<RunningInstanceState> selectOverloadedInstances() {
+
+        // If there are no instances, does not choose any instance to terminate
+        if (_runningInstances.isEmpty()) { return null; }
+
+        // sorts list of running instances to choose least busy instance
+        List<RunningInstanceState> instanceStates = selectActiveInstanceSates();
+
+        // select overloaded instances
+        List<RunningInstanceState> overloadedInstanceStates = new ArrayList<>();
+        for (RunningInstanceState instanceState : instanceStates) {
+            if (instanceState.isOverloaded()) {
+                overloadedInstanceStates.add(instanceState);
+            }
+        }
+        Collections.sort(instanceStates, RunningInstanceState.LEAST_LATEST_FIELD_LOADS_COMPARATOR);
+        // TODO: see if this is correct
+
+        return overloadedInstanceStates;
+    }
+
+    public Long averageFieldLoads() {
+        Long sumFieldLoads = 0L;
+        for (RunningInstanceState instanceState : _runningInstances.values()) {
+            sumFieldLoads += instanceState.getLatestFieldLoads();
+        }
+        return sumFieldLoads / new Long( _runningInstances.size());
+    }
+
+    public void resetFieldLoads() {
+        for (RunningInstanceState instanceState : _runningInstances.values()) {
+            instanceState.resetFieldLoads();
+        }
+    }
 }
