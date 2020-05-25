@@ -126,9 +126,9 @@ public class LoadBalancerServer {
                 }
             }
             instanceState = InstanceSelector.getInstance().selectInstance(request.getCost());
-            _logger.info("Selected instance " + instanceState.getInstanceId());
         }
         Instance instance = InstanceSelector.getInstance().getInstanceById(instanceState.getInstanceId());
+        _logger.info("Selected instance " + instanceState.getInstanceId());
 
         // Sends request for chosen instance to solve sudoku
         instanceState.addNewRequest(requestUuid, request);
