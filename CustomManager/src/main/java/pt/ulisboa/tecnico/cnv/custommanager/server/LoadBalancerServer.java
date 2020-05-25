@@ -27,11 +27,11 @@ public class LoadBalancerServer {
     private static Logger _logger = Logger.getLogger(InstanceSelector.class.getName());
 
     // Delay so that all instances are gathered before starting the autoscaler
-    private static final int AUTO_SCALER_DELAY = 1; // minutes
+    private static final int AUTO_SCALER_DELAY = 0; // minutes
     private static final int AUTO_SCALER_PERIOD = 1; // minutes
     // TODO: change this
-    private static final int HEALTH_CHECK_GRACE_PERIOD = 3; // seconds
-    private static final int HEALTH_CHECKER_PERIOD = 500; // seconds
+    private static final int HEALTH_CHECK_GRACE_PERIOD = 300; // seconds
+    private static final int HEALTH_CHECKER_PERIOD = 300; // seconds
 
     public static LoadBalancerServer getInstance() {
         if (_instance == null) {
@@ -44,13 +44,16 @@ public class LoadBalancerServer {
 
     public static void main(final String[] args) throws Exception {
 
-        final HttpServer server = HttpServer.create(new InetSocketAddress(80), 0);
+        //final HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 8000), 0);
+        final HttpServer server = HttpServer.create(new InetSocketAddress(8000), 0);
         // main handler that receives requests from sudoku solver website
         server.createContext("/sudoku", new LoadBalancerHandler());
         // handler that receives responses to requests from WebServer instances
         //server.createContext("/response", new ResponseHandler());
         server.setExecutor(Executors.newCachedThreadPool());
         server.start();
+
+        gatherAllInstancesTest();
 
         // schedules AutoScaler to execute repeatedly every check period of 1 minute
         ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(2);
@@ -61,14 +64,14 @@ public class LoadBalancerServer {
         // TODO: do i need to create a new schedular ?
         //ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
         // TODO: change period to 5
-        scheduler.scheduleAtFixedRate(new HealthChecker(), HEALTH_CHECK_GRACE_PERIOD, 30, TimeUnit.SECONDS);
+        scheduler.scheduleAtFixedRate(new HealthChecker(), HEALTH_CHECK_GRACE_PERIOD, HEALTH_CHECKER_PERIOD, TimeUnit.SECONDS);
 
         // shutdown everything when LoadBalancer goes down
         //Runtime.getRuntime().addShutdownHook(new Shutdown());
 
         System.out.println(server.getAddress().toString());
 
-        orderInstancesTest();
+        //orderInstancesTest();
 
         //gatherAllInstancesTest();
         //startInstanceTest();
@@ -112,7 +115,7 @@ public class LoadBalancerServer {
             while (InstanceSelector.getInstance().instancesInitializing() == true) {
                 _logger.info("Waiting for new instances to be initialized!");
                 try {
-                    Thread.sleep(5000); // 5 seconds
+                    Thread.sleep(10000); // 10 seconds
                 }
                 catch(InterruptedException e) {
                     _logger.warning("Failed to wait for instances to initialize");

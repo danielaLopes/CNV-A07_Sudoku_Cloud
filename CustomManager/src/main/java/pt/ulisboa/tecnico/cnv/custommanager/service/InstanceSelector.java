@@ -12,6 +12,7 @@ import com.amazonaws.services.ec2.model.*;
 import pt.ulisboa.tecnico.cnv.custommanager.domain.RequestCost;
 import pt.ulisboa.tecnico.cnv.custommanager.domain.RunningInstanceState;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -22,11 +23,6 @@ public class InstanceSelector {
     private static InstanceSelector _instance = null;
 
     private Logger _logger = Logger.getLogger(InstanceSelector.class.getName());
-
-    // maps the Cost of a Requested to the Difficulty level:
-    // Easy: 30% (20 segundos)
-    // Medium: 100% shorter time (1 min 30 segundos)
-    // Hard: 100% longer time (5 min 40 segundos)
 
     // AWS data structures
     private AmazonEC2 _ec2;
@@ -41,6 +37,8 @@ public class InstanceSelector {
     // Constants to limit instances
     private final int MAX_INSTANCES = 5;
     private final int MIN_INSTANCES = 1;
+
+    private final String WEB_SERVER_AMI = "ami-0b21d61cb9685f540";
 
     private InstanceSelector() {
         init();
@@ -108,9 +106,36 @@ public class InstanceSelector {
 
         List<RunningInstanceState> instanceStates = new ArrayList<>(_runningInstances.values());
         for (RunningInstanceState instanceState : instanceStates) {
-            if (instanceState.isInitialized() == false) return true;
+            if (instanceState.isInitialized() == false && checkInstanceInitialized(instanceState) == false) {
+                _logger.info("Instance is still initializing...");
+                return true;
+            }
         }
         return false;
+    }
+
+    public static boolean checkInstanceInitialized(RunningInstanceState instanceState) {
+
+        getInstance()._logger.info("Checking if instance is initialized");
+
+        Instance instance = getInstance().getInstanceById(instanceState.getInstanceId());
+
+        int code = 0;
+        try {
+            getInstance()._logger.info("CODE1: " + code);
+            code = SendMessages.getInstance().sendHealthCheck(instance);
+            getInstance()._logger.info("CODE2: " + code);
+        }
+        catch(IOException e) {
+            return false;
+        }
+
+        if (code == 200) {
+            instanceState.setInitialized();
+            getInstance()._logger.info("Instance is initialized!");
+            return true;
+        }
+        else return false;
     }
 
     // -------------------------------------------------------------
@@ -130,11 +155,14 @@ public class InstanceSelector {
         for (Reservation reservation : reservations) {
             List<Instance> instancesToAdd = reservation.getInstances();
             for (Instance instance : instancesToAdd) {
-                _logger.info("Adding instance " + instance.getInstanceId() +
+                // Checks if it's not the LoadBalancer
+                if (instance.getImageId().equals(WEB_SERVER_AMI)) {
+                    _logger.info("Adding instance " + instance.getInstanceId() +
                         " with state " + instance.getState());
-                _instances.put(instance.getInstanceId(), instance);
-                if (instance.getState().getName().equals("running")) {
-                    _runningInstances.put(instance.getInstanceId(), new RunningInstanceState(instance.getInstanceId()));
+                    _instances.put(instance.getInstanceId(), instance);
+                    if (instance.getState().getName().equals("running")) {
+                        _runningInstances.put(instance.getInstanceId(), new RunningInstanceState(instance.getInstanceId()));
+                    }
                 }
             }
         }
@@ -143,9 +171,9 @@ public class InstanceSelector {
     public synchronized int assertRunningInstancesBetweenMinMax() {
         int nRunningInstances = _runningInstances.size();
         if (nRunningInstances > MAX_INSTANCES) {
-            int numToDestroy = nRunningInstances - MAX_INSTANCES;
-            _logger.info("Too many instances running (" + nRunningInstances + ") destroying " + numToDestroy);
-            removeInstances(numToDestroy);
+            int numToTerminate = nRunningInstances - MAX_INSTANCES;
+            _logger.info("Too many instances running (" + nRunningInstances + ") terminating " + numToTerminate);
+            removeInstances(numToTerminate);
         } else if (nRunningInstances < MIN_INSTANCES) {
             int numToLaunch = MIN_INSTANCES - nRunningInstances;
             _logger.info("Too few instances running (" + nRunningInstances + ") launching " + numToLaunch);
@@ -167,7 +195,7 @@ public class InstanceSelector {
 
         RunInstancesRequest runInstancesRequest = new RunInstancesRequest();
 
-        runInstancesRequest.withImageId("ami-0b21d61cb9685f540")
+        runInstancesRequest.withImageId(WEB_SERVER_AMI)
                             .withMinCount(n)
                             .withMaxCount(n)
                             .withKeyName("CNV-proj")
@@ -306,11 +334,10 @@ public class InstanceSelector {
 
     public synchronized RunningInstanceState selectInstance(RequestCost cost) {
 
-        // If there are requests before machines are up and running, it waits
-        while (_runningInstances.isEmpty()) {}
-
-        // sorts list of running instances to choose best instance to handle request
         List<RunningInstanceState> instanceStates = selectActiveInstanceStates();
+
+        // If there are requests before machines are up and running, it waits
+        if (instanceStates.isEmpty()) { return null; }
 
         Collections.sort(instanceStates, RunningInstanceState.LEAST_CPU_AVAILABLE_COMPARATOR);
 
@@ -318,13 +345,15 @@ public class InstanceSelector {
             // if machine has enough CPU available
             // chooses the machine with least cpu available that has enough available cpu to process the request
             if (instanceState.getTotalCpuAvailable() >= cost.getCpuPercentage()) {
+            _logger.info("Checking if " + instanceState.getInstanceId() + " has enough CPU available");
+                _logger.info(instanceState.getInstanceId() + " has enough CPU available and was choosen");
                 return instanceState;
             }
         }
         // if all machines are occupied, checks if there are new instances being initialized in order to wait for these
-        if (instancesInitializing() == true) {
+        /*if (instancesInitializing() == true) {
             return null;
-        }
+        }*/
         // if no machine has enough CPU available and no new machines are being initialized,
         // chooses the one with most CPU available, even if that's above 100
         return instanceStates.get(instanceStates.size() - 1);
@@ -335,11 +364,9 @@ public class InstanceSelector {
     // -------------------------------------------------------------
     public List<RunningInstanceState> selectInstancesToTerminate() {
 
-        // If there are no instances, does not choose any instance to terminate
-        if (_runningInstances.isEmpty()) { return null; }
-
-        // sorts list of running instances to choose least busy instance
         List<RunningInstanceState> instanceStates = selectActiveInstanceStates();
+        // If there are no instances, does not choose any instance to terminate
+        if (instanceStates.isEmpty()) { return null; }
 
         // select idle instances
         List<RunningInstanceState> idleInstanceStates = new ArrayList<>();
@@ -349,18 +376,15 @@ public class InstanceSelector {
             }
         }
         Collections.sort(instanceStates, RunningInstanceState.LEAST_LATEST_FIELD_LOADS_COMPARATOR);
-        // TODO: see if this is correct
 
         return idleInstanceStates;
     }
 
     public List<RunningInstanceState> selectOverloadedInstances() {
 
-        // If there are no instances, does not choose any instance to terminate
-        if (_runningInstances.isEmpty()) { return null; }
-
-        // sorts list of running instances to choose least busy instance
         List<RunningInstanceState> instanceStates = selectActiveInstanceStates();
+        // If there are no instances, does not choose any instance to terminate
+        if (instanceStates.isEmpty()) { return null; }
 
         // select overloaded instances
         List<RunningInstanceState> overloadedInstanceStates = new ArrayList<>();
