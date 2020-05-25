@@ -339,10 +339,8 @@ public class InstanceSelector {
             for (Instance instance: instancesList) {
                 // to update instances public IPs after they are initialized
                 if (instance.getInstanceId().equals(instanceId)) {
-                    _logger.info("Replaced instance!");
-                    _logger.info("_instances.size() " + _instances.size());
+                    _logger.info("Replaced instance info!");
                     _instances.put(instance.getInstanceId(), instance);
-                    _logger.info("_instances.size() " + _instances.size());
                     return instance;
                 }
             }
