@@ -89,12 +89,12 @@ public class RunningInstanceState {
     public void addNewRequest(String query, Request request) {
 
         _processingRequests.put(query, request);
-        _estimatedCpu += request.getCost().getCpu();
+        _estimatedCpu += request.getCost().getCpuPercentage();
     }
 
     public void removeRequest(String uuid) {
 
-        _estimatedCpu -= _processingRequests.get(uuid).getCost().getCpu();
+        _estimatedCpu -= _processingRequests.get(uuid).getCost().getCpuPercentage();
         _processingRequests.remove(uuid);
 
     }

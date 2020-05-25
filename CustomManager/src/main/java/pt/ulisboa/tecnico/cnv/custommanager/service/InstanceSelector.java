@@ -317,7 +317,7 @@ public class InstanceSelector {
         for (RunningInstanceState instanceState : instanceStates) {
             // if machine has enough CPU available
             // chooses the machine with least cpu available that has enough available cpu to process the request
-            if (instanceState.getTotalCpuAvailable() >= cost.getCpu()) {
+            if (instanceState.getTotalCpuAvailable() >= cost.getCpuPercentage()) {
                 return instanceState;
             }
         }
