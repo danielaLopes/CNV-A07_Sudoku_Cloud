@@ -58,15 +58,18 @@ public class MetricsTool {
                 String in_filename = in_dir.getAbsolutePath() + System.getProperty("file.separator") + filename;
                 String out_filename = out_dir.getAbsolutePath() + System.getProperty("file.separator") + filename;
                 ClassInfo ci = new ClassInfo(in_filename);
-
+                String className = ci.getClassName();
                 for (Enumeration e = ci.getRoutines().elements(); e.hasMoreElements(); ) {
                     Routine routine = (Routine) e.nextElement();
 
                     for (Enumeration instrs = (routine.getInstructionArray()).elements(); instrs.hasMoreElements(); ) {
                         Instruction instr = (Instruction) instrs.nextElement();
-                        int opcode = instr.getOpcode();
-                        if (opcode == InstructionTable.getfield)
-                            instr.addBefore("BIT/serverMetrics/MetricsTool", "count", new Integer(0));
+                        if(className.equals("pt/ulisboa/tecnico/cnv/solver/SudokuSolverBFS") || className.startsWith("pt/ulisboa/tecnico/cnv/solver/SudokuSolverDLX") || 
+                        className.equals("pt/ulisboa/tecnico/cnv/solver/SudokuSolverCP")) {
+                            int opcode = instr.getOpcode();
+                            if (opcode == InstructionTable.getfield)
+                                instr.addBefore("BIT/serverMetrics/MetricsTool", "count", new Integer(0));
+                        }
                     }
                 }
                 ci.write(out_filename);
@@ -102,7 +105,7 @@ public class MetricsTool {
         }
     }
 
-    public static synchronized int insertDynamo(String query)
+    public static synchronized long insertDynamo(String query)
     {
         Long currentThreadId = Thread.currentThread().getId();
         Long current_field_load_count = fieldloadcount.get(currentThreadId);
