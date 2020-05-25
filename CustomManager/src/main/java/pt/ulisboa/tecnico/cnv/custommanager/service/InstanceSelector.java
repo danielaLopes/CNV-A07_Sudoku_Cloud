@@ -374,13 +374,12 @@ public class InstanceSelector {
                 return instanceState;
             }
         }
-        // if all machines are occupied, checks if there are new instances being initialized in order to wait for these
-        /*if (instancesInitializing() == true) {
-            return null;
-        }*/
+        
+        Collections.sort(instanceStates, RunningInstanceState.LEAST_SUM_PROCESSING_FIELD_LOADS_COMPARATOR);
+
         // if no machine has enough CPU available and no new machines are being initialized,
         // chooses the one with most CPU available, even if that's above 100
-        return instanceStates.get(instanceStates.size() - 1);
+        return instanceStates.get(0);
     }
 
     // -------------------------------------------------------------
