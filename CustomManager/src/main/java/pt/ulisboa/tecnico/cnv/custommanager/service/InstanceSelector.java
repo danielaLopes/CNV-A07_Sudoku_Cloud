@@ -329,8 +329,6 @@ public class InstanceSelector {
 
     public Instance describeInstances(String instanceId) {
         DescribeInstancesRequest request = new DescribeInstancesRequest();
-        //Filter filter = new Filter("InstanceId:" + AwsConfiguration.getInstance().getWebServerTagValue(), values);
-        //DescribeInstancesResult result = _ec2.describeInstances(request.withFilters(filter));
         DescribeInstancesResult result = _ec2.describeInstances(request);
 
         List<Reservation> reservations = result.getReservations();
@@ -339,9 +337,12 @@ public class InstanceSelector {
             List<Instance> instancesList = reservation.getInstances();
 
             for (Instance instance: instancesList) {
+                // to update instances public IPs after they are initialized
                 if (instance.getInstanceId().equals(instanceId)) {
                     _logger.info("Replaced instance!");
+                    _logger.info("_instances.size() " + _instances.size());
                     _instances.put(instance.getInstanceId(), instance);
+                    _logger.info("_instances.size() " + _instances.size());
                     return instance;
                 }
             }

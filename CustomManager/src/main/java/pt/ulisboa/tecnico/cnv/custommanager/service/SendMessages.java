@@ -54,14 +54,13 @@ public class SendMessages {
         _logger.info("Sent response to " + t.getRemoteAddress().toString());
     }
 
-    //public static int sendHealthCheck(Instance instance, String request) throws Exception {
     public static int sendHealthCheck(Instance instance) throws IOException {
-        String instanceId = instance.getInstanceId();
+        
         if (instance.getPublicIpAddress() == null) {
+            String instanceId = instance.getInstanceId();
             instance = InstanceSelector.getInstance().describeInstances(instanceId);
         }
         String urlString = "http://" + instance.getPublicIpAddress() + ":8000/ping";
-        _logger.info("sent healthcheck to : " + urlString);
 
         return getResponseCode(sendServerRequest("GET", urlString, null, PING_TIMEOUT));
     }
@@ -75,6 +74,11 @@ public class SendMessages {
 
     public static String sendSudokuRequest(
             Instance instance, String request, byte[] body, int estimatedTime) throws IOException {
+        
+        if (instance.getPublicIpAddress() == null) {
+            String instanceId = instance.getInstanceId();
+            instance = InstanceSelector.getInstance().describeInstances(instanceId);
+        }
 
         String urlString = "http://" + instance.getPublicIpAddress() + ":8000/sudoku?" + request;
 
@@ -119,9 +123,9 @@ public class SendMessages {
             }
         }
 
-        /*if (connection != null) {
+        if (connection != null) {
             connection.disconnect();
-        }*/
+        }
 
         return connection;
     }
@@ -150,7 +154,6 @@ public class SendMessages {
     }
 
     public static int getResponseCode(HttpURLConnection connection) throws IOException {
-        _logger.info("CONNECTION: " + connection);
 
         return connection.getResponseCode();
     }
