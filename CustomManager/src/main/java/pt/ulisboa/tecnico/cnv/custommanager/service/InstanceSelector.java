@@ -38,7 +38,7 @@ public class InstanceSelector {
     private final int MAX_INSTANCES = 5;
     private final int MIN_INSTANCES = 1;
 
-    private final String WEB_SERVER_AMI = "ami-0b21d61cb9685f540";
+    private final String WEB_SERVER_AMI = "ami-0e94f155280813dee";
 
     private InstanceSelector() {
         init();
@@ -127,6 +127,7 @@ public class InstanceSelector {
             getInstance()._logger.info("CODE2: " + code);
         }
         catch(IOException e) {
+            getInstance()._logger.info(e.getMessage());
             return false;
         }
 
