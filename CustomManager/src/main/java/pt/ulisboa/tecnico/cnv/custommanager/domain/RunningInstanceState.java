@@ -16,15 +16,14 @@ public class RunningInstanceState {
 
     private ConcurrentHashMap<String, Request> _processingRequests = new ConcurrentHashMap<>();
 
-    private int _estimatedCpu;
+    private Double _estimatedCpu;
 
-    // TODO: how to obtain metrics for each machine on a certain interval?
     private Long _totalFieldLoads;
     // keeps track of all the fieldLoads performed since the latest AutoScaler run
     private Long _latestFieldLoads;
-    // TODO: see what amount of field loads correspond to under 20% cpu
-    private final Long IDLE_FIELD_LOADS = 1000L;
-    private final Long OVERLOADED_FIELD_LOADS = 10000L;
+
+    private final Long IDLE_FIELD_LOADS = 20000L; // 20% cpu
+    private final Long OVERLOADED_FIELD_LOADS = 90000L; // 80% cpu
 
     // machines can only start receiving requests once they are initialized
     private boolean _initialized;
@@ -39,7 +38,7 @@ public class RunningInstanceState {
 
     public RunningInstanceState(String instanceId) {
         _instanceId = instanceId;
-        _estimatedCpu = 0;
+        _estimatedCpu = 0.0;
         _initialized = false;
         _shuttingDown = false;
         _totalFieldLoads = 0L;
@@ -51,15 +50,22 @@ public class RunningInstanceState {
         return _instanceId;
     }
 
-    public boolean isInitialized() { return _initialized; }
+    public boolean isInitialized() { 
+        if (_initialized == false) {
+            return InstanceSelector.getInstance().checkInstanceInitialized(this);
+        }
+        else {
+            return true;
+        }         
+    }
 
-    public void setInitialized() { _logger.info("SetInitialized()"); _initialized = true; }
+    public void setInitialized() { _initialized = true; }
 
     public boolean shuttingDown() { return _shuttingDown; }
 
-    public boolean isIdle() { return _latestFieldLoads <= IDLE_FIELD_LOADS; }
+    public boolean isIdle() { return getTotalFieldLoadsByPeriod() <= IDLE_FIELD_LOADS; }
 
-    public boolean isOverloaded() { return _latestFieldLoads > OVERLOADED_FIELD_LOADS; }
+    public boolean isOverloaded() { return getTotalFieldLoadsByPeriod() >= OVERLOADED_FIELD_LOADS; }
 
     // should be performed at the end of receiving response to each request
     public void updateTotalFieldLoads(Long fieldLoads) {
@@ -85,7 +91,7 @@ public class RunningInstanceState {
         if (_initialized == false) setInitialized();
     }
 
-    public boolean failed() { return _nHealthCheckStrikes == 3; }
+    public boolean failed() { return _nHealthCheckStrikes == 5; }
 
     public ConcurrentMap<String, Request> getProcessingRequests() { return _processingRequests; }
 
@@ -114,13 +120,14 @@ public class RunningInstanceState {
         return (getLatestFieldLoads() + calculateRequestCostSum());
     }
 
-    public int getTotalCpuOccupied() {
+    public Double getTotalCpuOccupied() {
         return _estimatedCpu;
     }
 
-    public int getTotalCpuAvailable() { 
-        if (_estimatedCpu < 100) return 100 - _estimatedCpu; 
-        else return 0;
+    public Double getTotalCpuAvailable() { 
+        Double maxCpu = 100.0;
+        if (_estimatedCpu < maxCpu) return maxCpu - _estimatedCpu; 
+        else return 0.0;
     }
 
     // orders from least cpu available to most cpu available
@@ -128,7 +135,7 @@ public class RunningInstanceState {
             new Comparator<RunningInstanceState>() {
         @Override
         public int compare(RunningInstanceState o1, RunningInstanceState o2) {
-            return Integer.compare(o1.getTotalCpuAvailable(), o2.getTotalCpuAvailable());
+            return o1.getTotalCpuAvailable().compareTo(o2.getTotalCpuAvailable());
         }
     };
 
@@ -165,7 +172,7 @@ public class RunningInstanceState {
             _logger.info("Checking if it is possible to shutdown instance " + _instanceId);
             // instance only shutdowns when there are no requests to fulfill
             if (_processingRequests.size() == 0) {
-                _logger.info("Scheduled shutting down instance " + _instanceId);
+                _logger.info("Can shutdown " + _instanceId + " because it has no pending requests.");
                 _scheduledShutdownFuture.cancel(false);
                 InstanceSelector.getInstance().terminateInstance(_instanceId);
             }

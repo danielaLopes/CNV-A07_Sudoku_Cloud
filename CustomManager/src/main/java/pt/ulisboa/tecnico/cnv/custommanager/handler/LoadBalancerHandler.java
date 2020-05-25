@@ -40,6 +40,7 @@ public class LoadBalancerHandler implements HttpHandler {
         if (cost == null) {
             // check if requestCost is in the dynamoDB, if not estimates the cost
             cost = RequestCostEstimator.getInstance().estimateCost(query);
+            _logger.info("Cost estimated: " + cost);
         }
 
         String requestUuid = generateRequestUuid();

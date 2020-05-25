@@ -56,8 +56,12 @@ public class SendMessages {
 
     //public static int sendHealthCheck(Instance instance, String request) throws Exception {
     public static int sendHealthCheck(Instance instance) throws IOException {
-
+        String instanceId = instance.getInstanceId();
+        if (instance.getPublicIpAddress() == null) {
+            instance = InstanceSelector.getInstance().describeInstances(instanceId);
+        }
         String urlString = "http://" + instance.getPublicIpAddress() + ":8000/ping";
+        _logger.info("sent healthcheck to : " + urlString);
 
         return getResponseCode(sendServerRequest("GET", urlString, null, PING_TIMEOUT));
     }
@@ -73,7 +77,6 @@ public class SendMessages {
             Instance instance, String request, byte[] body, int estimatedTime) throws IOException {
 
         String urlString = "http://" + instance.getPublicIpAddress() + ":8000/sudoku?" + request;
-        _logger.info("Sending sudoku request to: " + urlString + " estimated to take " + estimatedTime);
 
         return getResponse(sendServerRequest("POST", urlString, body, estimatedTime * 1000 * 2));
     }
@@ -81,7 +84,6 @@ public class SendMessages {
     public static String sendLocalSudokuRequest(String request, byte[] body, int estimatedTime) throws IOException  {
 
         String urlString = "http://127.0.0.1:8000/sudoku?" + request;
-        _logger.info("urlString: " + urlString + " estimated to take " + estimatedTime);
 
         return getResponse(sendServerRequest("POST", urlString, body, estimatedTime * 1000 * 2));
     }
@@ -117,9 +119,9 @@ public class SendMessages {
             }
         }
 
-        if (connection != null) {
+        /*if (connection != null) {
             connection.disconnect();
-        }
+        }*/
 
         return connection;
     }
@@ -148,6 +150,7 @@ public class SendMessages {
     }
 
     public static int getResponseCode(HttpURLConnection connection) throws IOException {
+        _logger.info("CONNECTION: " + connection);
 
         return connection.getResponseCode();
     }

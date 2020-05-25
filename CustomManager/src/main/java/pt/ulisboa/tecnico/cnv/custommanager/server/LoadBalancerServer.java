@@ -32,8 +32,8 @@ public class LoadBalancerServer {
     private static final int AUTO_SCALER_DELAY = 0; // minutes
     private static final int AUTO_SCALER_PERIOD = 1; // minutes
     // TODO: change this
-    private static final int HEALTH_CHECK_GRACE_PERIOD = 60; // seconds
-    private static final int HEALTH_CHECKER_PERIOD = 60; // seconds
+    private static final int HEALTH_CHECK_GRACE_PERIOD = 100; // seconds
+    private static final int HEALTH_CHECKER_PERIOD = 100; // seconds
 
     public static LoadBalancerServer getInstance() {
         if (_instance == null) {
@@ -126,6 +126,7 @@ public class LoadBalancerServer {
                 }
             }
             instanceState = InstanceSelector.getInstance().selectInstance(request.getCost());
+            _logger.info("Selected instance " + instanceState.getInstanceId());
         }
         Instance instance = InstanceSelector.getInstance().getInstanceById(instanceState.getInstanceId());
 
@@ -140,6 +141,7 @@ public class LoadBalancerServer {
         catch(IOException e) {
             _logger.warning(e + " Request could not be processed by instance " +
                     instanceState.getInstanceId() + " . Repeating it...");
+           instanceState.removeRequest(requestUuid);
             solutionRequest(requestUuid, request);
         }
 
@@ -153,14 +155,9 @@ public class LoadBalancerServer {
             // saves requestCost return by server in the cache
             _cache.put(request.getQuery(), actualCost);
 
-            _logger.info("after requestCostCache");
-
             // Updates the state of the instance that performed this request
             instanceState.updateTotalFieldLoads(fieldLoads);
             instanceState.removeRequest(requestUuid);
-
-            _logger.info("solution " + solution);
-            _logger.info("field loads " + fieldLoads);
 
             try {
                 SendMessages.getInstance().sendClientResponse(request.getClientCommunication(), solution);
@@ -173,6 +170,7 @@ public class LoadBalancerServer {
         else {
             _logger.warning("Request could not be processed by instance " +
                     instanceState.getInstanceId() + " . Repeating it...");
+            instanceState.removeRequest(requestUuid);
             solutionRequest(requestUuid, request);
         }
     }

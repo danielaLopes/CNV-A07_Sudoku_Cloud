@@ -2,6 +2,7 @@ package pt.ulisboa.tecnico.cnv.custommanager.service;
 
 import com.amazonaws.AmazonClientException;
 import com.amazonaws.auth.AWSCredentials;
+import com.amazonaws.services.ec2.model.Instance;
 import com.amazonaws.auth.profile.ProfileCredentialsProvider;
 import com.amazonaws.services.cloudwatch.AmazonCloudWatch;
 import com.amazonaws.services.cloudwatch.AmazonCloudWatchClientBuilder;
@@ -38,7 +39,7 @@ public class InstanceSelector {
     private final int MAX_INSTANCES = 5;
     private final int MIN_INSTANCES = 1;
 
-    private final String WEB_SERVER_AMI = "ami-03a81567316a5c643";
+    private final String WEB_SERVER_AMI = "ami-0d078ba2b9844aef0";
 
     private InstanceSelector() {
         init();
@@ -106,7 +107,7 @@ public class InstanceSelector {
 
         List<RunningInstanceState> instanceStates = new ArrayList<>(_runningInstances.values());
         for (RunningInstanceState instanceState : instanceStates) {
-            if (instanceState.isInitialized() == false && checkInstanceInitialized(instanceState) == false) {
+            if (instanceState.isInitialized() == false) {
                 _logger.info("Instance is still initializing...");
                 return true;
             }
@@ -122,12 +123,10 @@ public class InstanceSelector {
 
         int code = 0;
         try {
-            getInstance()._logger.info("CODE1: " + code);
             code = SendMessages.getInstance().sendHealthCheck(instance);
-            getInstance()._logger.info("CODE2: " + code);
         }
         catch(IOException e) {
-            getInstance()._logger.info(e.getMessage());
+            getInstance()._logger.info(e + "");
             return false;
         }
 
@@ -221,7 +220,7 @@ public class InstanceSelector {
         }
 
         List<RunningInstanceState> instanceStates = new ArrayList<>(_runningInstances.values());
-        // TODO: check if it's last on the list
+
         Collections.sort(instanceStates, RunningInstanceState.LEAST_CPU_AVAILABLE_COMPARATOR);
 
         List<RunningInstanceState> instancesToRemove = instanceStates.subList(
@@ -328,6 +327,28 @@ public class InstanceSelector {
         startInstances(1);
     }
 
+    public Instance describeInstances(String instanceId) {
+        DescribeInstancesRequest request = new DescribeInstancesRequest();
+        //Filter filter = new Filter("InstanceId:" + AwsConfiguration.getInstance().getWebServerTagValue(), values);
+        //DescribeInstancesResult result = _ec2.describeInstances(request.withFilters(filter));
+        DescribeInstancesResult result = _ec2.describeInstances(request);
+
+        List<Reservation> reservations = result.getReservations();
+
+        for (Reservation reservation: reservations) {
+            List<Instance> instancesList = reservation.getInstances();
+
+            for (Instance instance: instancesList) {
+                if (instance.getInstanceId().equals(instanceId)) {
+                    _logger.info("Replaced instance!");
+                    _instances.put(instance.getInstanceId(), instance);
+                    return instance;
+                }
+            }
+        }
+        return null;
+    }
+
     // -------------------------------------------------------------
     // -----  Methods to help the LoadBalancer choose which    -----
     // -----            instance to run a request              -----
@@ -343,11 +364,14 @@ public class InstanceSelector {
         Collections.sort(instanceStates, RunningInstanceState.LEAST_CPU_AVAILABLE_COMPARATOR);
 
         for (RunningInstanceState instanceState : instanceStates) {
+            _logger.info(instanceState.getInstanceId() + " ORDERED BY SELECTINSTANCE() " + instanceState.getTotalCpuAvailable());
+        }
+
+        for (RunningInstanceState instanceState : instanceStates) {
             // if machine has enough CPU available
             // chooses the machine with least cpu available that has enough available cpu to process the request
             if (instanceState.getTotalCpuAvailable() >= cost.getCpuPercentage()) {
-            _logger.info("Checking if " + instanceState.getInstanceId() + " has enough CPU available");
-                _logger.info(instanceState.getInstanceId() + " has enough CPU available and was choosen");
+                _logger.info(instanceState.getInstanceId() + " has enough CPU available and was choosen with " + instanceState.getTotalCpuAvailable());
                 return instanceState;
             }
         }
@@ -378,6 +402,10 @@ public class InstanceSelector {
         }
         Collections.sort(instanceStates, RunningInstanceState.LEAST_LATEST_FIELD_LOADS_COMPARATOR);
 
+        for (RunningInstanceState instanceState : instanceStates) {
+            _logger.info(instanceState.getInstanceId() + " ORDERED BY SELECTINSTANCESTOTERMINATE() " + instanceState.getTotalFieldLoadsByPeriod());
+        }
+
         return idleInstanceStates;
     }
 
@@ -395,6 +423,10 @@ public class InstanceSelector {
             }
         }
         Collections.sort(instanceStates, RunningInstanceState.LEAST_LATEST_FIELD_LOADS_COMPARATOR);
+
+        for (RunningInstanceState instanceState : instanceStates) {
+            _logger.info(instanceState.getInstanceId() + " ORDERED BY SELECTOVERLOADEDINSTANCES " + instanceState.getTotalFieldLoadsByPeriod());
+        }
 
         return overloadedInstanceStates;
     }
