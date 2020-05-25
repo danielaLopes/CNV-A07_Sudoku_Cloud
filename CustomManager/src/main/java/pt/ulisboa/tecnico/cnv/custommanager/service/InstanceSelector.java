@@ -38,7 +38,7 @@ public class InstanceSelector {
     private final int MAX_INSTANCES = 5;
     private final int MIN_INSTANCES = 1;
 
-    private final String WEB_SERVER_AMI = "ami-0e94f155280813dee";
+    private final String WEB_SERVER_AMI = "ami-03a81567316a5c643";
 
     private InstanceSelector() {
         init();
@@ -395,7 +395,6 @@ public class InstanceSelector {
             }
         }
         Collections.sort(instanceStates, RunningInstanceState.LEAST_LATEST_FIELD_LOADS_COMPARATOR);
-        // TODO: see if this is correct
 
         return overloadedInstanceStates;
     }
@@ -403,7 +402,10 @@ public class InstanceSelector {
     public Long averageFieldLoads() {
         Long sumFieldLoads = 0L;
         for (RunningInstanceState instanceState : _runningInstances.values()) {
+            // amount of actual field loads from requests that were processed since the previous AutoScaler run
             sumFieldLoads += instanceState.getLatestFieldLoads();
+            // amount of estimated field loads from requests currently being processed
+            sumFieldLoads += instanceState.calculateRequestCostSum();
         }
         return sumFieldLoads / new Long( _runningInstances.size());
     }

@@ -26,12 +26,14 @@ public class LoadBalancerServer {
 
     private static Logger _logger = Logger.getLogger(InstanceSelector.class.getName());
 
+    private static RequestCostCache _cache = new RequestCostCache();
+
     // Delay so that all instances are gathered before starting the autoscaler
     private static final int AUTO_SCALER_DELAY = 0; // minutes
     private static final int AUTO_SCALER_PERIOD = 1; // minutes
     // TODO: change this
-    private static final int HEALTH_CHECK_GRACE_PERIOD = 300; // seconds
-    private static final int HEALTH_CHECKER_PERIOD = 300; // seconds
+    private static final int HEALTH_CHECK_GRACE_PERIOD = 60; // seconds
+    private static final int HEALTH_CHECKER_PERIOD = 60; // seconds
 
     public static LoadBalancerServer getInstance() {
         if (_instance == null) {
@@ -41,6 +43,8 @@ public class LoadBalancerServer {
     }
 
     private LoadBalancerServer() {}
+
+    public RequestCostCache getCache() { return _cache; }
 
     public static void main(final String[] args) throws Exception {
 
@@ -134,34 +138,40 @@ public class LoadBalancerServer {
                     instance, request.getQuery(), request.getBody(), request.getCost().getTimeEstimation());
         }
         catch(IOException e) {
-            _logger.info(e + " Request could not be processed by instance " +
+            _logger.warning(e + " Request could not be processed by instance " +
                     instanceState.getInstanceId() + " . Repeating it...");
             solutionRequest(requestUuid, request);
         }
 
         if (response != null) {
+
             String fields[] = response.split(":");
             String solution = fields[0];
             Long fieldLoads = Long.parseLong(fields[1]);
             RequestCost actualCost = new RequestCost(fieldLoads);
 
             // saves requestCost return by server in the cache
-            RequestCostCache.getInstance().put(request.getQuery(), actualCost);
+            _cache.put(request.getQuery(), actualCost);
+
+            _logger.info("after requestCostCache");
 
             // Updates the state of the instance that performed this request
             instanceState.updateTotalFieldLoads(fieldLoads);
             instanceState.removeRequest(requestUuid);
 
+            _logger.info("solution " + solution);
+            _logger.info("field loads " + fieldLoads);
+
             try {
                 SendMessages.getInstance().sendClientResponse(request.getClientCommunication(), solution);
+                _logger.info("Sent response to client.");
             }
             catch(IOException e) {
-                // TODO: do anything in case this fails????
-                _logger.info("Could not send response to client.");
+                _logger.warning("Could not send response to client.");
             }
         }
         else {
-            _logger.info("Request could not be processed by instance " +
+            _logger.warning("Request could not be processed by instance " +
                     instanceState.getInstanceId() + " . Repeating it...");
             solutionRequest(requestUuid, request);
         }

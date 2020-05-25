@@ -73,16 +73,17 @@ public class SendMessages {
             Instance instance, String request, byte[] body, int estimatedTime) throws IOException {
 
         String urlString = "http://" + instance.getPublicIpAddress() + ":8000/sudoku?" + request;
+        _logger.info("Sending sudoku request to: " + urlString + " estimated to take " + estimatedTime);
 
-        return getResponse(sendServerRequest("POST", urlString, body, estimatedTime));
+        return getResponse(sendServerRequest("POST", urlString, body, estimatedTime * 1000 * 2));
     }
 
     public static String sendLocalSudokuRequest(String request, byte[] body, int estimatedTime) throws IOException  {
 
         String urlString = "http://127.0.0.1:8000/sudoku?" + request;
-        _logger.info("urlString: " + urlString);
+        _logger.info("urlString: " + urlString + " estimated to take " + estimatedTime);
 
-        return getResponse(sendServerRequest("POST", urlString, body, estimatedTime));
+        return getResponse(sendServerRequest("POST", urlString, body, estimatedTime * 1000 * 2));
     }
 
     public static HttpURLConnection sendServerRequest(

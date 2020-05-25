@@ -36,7 +36,7 @@ public class LoadBalancerHandler implements HttpHandler {
         body.read(bodyBytes);
 
         // check if requestCost is in cache
-        RequestCost cost = RequestCostCache.getInstance().get(query);
+        RequestCost cost = LoadBalancerServer.getInstance().getCache().get(query);
         if (cost == null) {
             // check if requestCost is in the dynamoDB, if not estimates the cost
             cost = RequestCostEstimator.getInstance().estimateCost(query);

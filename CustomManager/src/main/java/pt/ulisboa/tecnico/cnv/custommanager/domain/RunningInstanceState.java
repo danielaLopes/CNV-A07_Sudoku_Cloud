@@ -5,6 +5,7 @@ import pt.ulisboa.tecnico.cnv.custommanager.service.InstanceSelector;
 
 import java.util.Comparator;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 
 public class RunningInstanceState {
@@ -12,9 +13,9 @@ public class RunningInstanceState {
     private String _instanceId;
     // Keeps track of all requests currently being processed by this instance
     // Maps each request to the corresponding request cost
-    // TODO: does it require to be concurrent
+
     private ConcurrentHashMap<String, Request> _processingRequests = new ConcurrentHashMap<>();
-    // TODO: put as atomic
+
     private int _estimatedCpu;
 
     // TODO: how to obtain metrics for each machine on a certain interval?
@@ -61,16 +62,19 @@ public class RunningInstanceState {
     public boolean isOverloaded() { return _latestFieldLoads > OVERLOADED_FIELD_LOADS; }
 
     // should be performed at the end of receiving response to each request
-    // TODO: when should we put this information
     public void updateTotalFieldLoads(Long fieldLoads) {
         _totalFieldLoads += fieldLoads;
-        _latestFieldLoads += fieldLoads;
+        synchronized(_latestFieldLoads) {
+            _latestFieldLoads += fieldLoads;
+        }     
     }
 
     public Long getLatestFieldLoads() { return _latestFieldLoads; }
 
     public void resetFieldLoads() {
-        _latestFieldLoads = 0L;
+        synchronized(_latestFieldLoads) {
+            _latestFieldLoads = 0L;
+        }
     }
 
     public void incrementHealthCheckStrikes() { _nHealthCheckStrikes++; }
@@ -85,21 +89,19 @@ public class RunningInstanceState {
 
     public ConcurrentMap<String, Request> getProcessingRequests() { return _processingRequests; }
 
-    // TODO: query or uuid?
     public void addNewRequest(String query, Request request) {
 
         _processingRequests.put(query, request);
         _estimatedCpu += request.getCost().getCpuPercentage();
     }
 
-    public void removeRequest(String uuid) {
+    public synchronized void removeRequest(String uuid) {
 
         _estimatedCpu -= _processingRequests.get(uuid).getCost().getCpuPercentage();
         _processingRequests.remove(uuid);
 
     }
 
-    // TODO: should we do this on the comparator or the getLatestFieldLoads()
     public Long calculateRequestCostSum() {
         Long totalEstimatedCost = 0L;
         for (Request request : _processingRequests.values()) {
@@ -108,18 +110,18 @@ public class RunningInstanceState {
         return totalEstimatedCost;
     }
 
-    // TODO: see what to do with estimated cpu
+    public Long getTotalFieldLoadsByPeriod() {
+        return (getLatestFieldLoads() + calculateRequestCostSum());
+    }
+
     public int getTotalCpuOccupied() {
-        /*int totalCpu
-        for (RequestCost cost : _processingRequests.values()) {
-            totalEstimatedCost += cost.getFieldLoads();
-        }
-        return totalEstimatedCost;*/
         return _estimatedCpu;
     }
 
-    // TODO
-    public int getTotalCpuAvailable() { return 100 - _estimatedCpu; }
+    public int getTotalCpuAvailable() { 
+        if (_estimatedCpu < 100) return 100 - _estimatedCpu; 
+        else return 0;
+    }
 
     // orders from least cpu available to most cpu available
     public static final Comparator<RunningInstanceState> LEAST_CPU_AVAILABLE_COMPARATOR =
@@ -135,7 +137,7 @@ public class RunningInstanceState {
             new Comparator<RunningInstanceState>() {
         @Override
         public int compare(RunningInstanceState o1, RunningInstanceState o2) {
-            return o1.getLatestFieldLoads().compareTo(o2.getLatestFieldLoads());
+            return o1.getTotalFieldLoadsByPeriod().compareTo(o2.getTotalFieldLoadsByPeriod());
         }
     };
 
