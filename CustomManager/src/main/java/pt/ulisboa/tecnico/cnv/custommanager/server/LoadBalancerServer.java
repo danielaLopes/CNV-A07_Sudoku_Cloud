@@ -27,11 +27,11 @@ public class LoadBalancerServer {
     private static Logger _logger = Logger.getLogger(InstanceSelector.class.getName());
 
     // Delay so that all instances are gathered before starting the autoscaler
-    private static final int AUTO_SCALER_DELAY = 1; // minutes
+    private static final int AUTO_SCALER_DELAY = 0; // minutes
     private static final int AUTO_SCALER_PERIOD = 1; // minutes
     // TODO: change this
-    private static final int HEALTH_CHECK_GRACE_PERIOD = 3; // seconds
-    private static final int HEALTH_CHECKER_PERIOD = 500; // seconds
+    private static final int HEALTH_CHECK_GRACE_PERIOD = 300; // seconds
+    private static final int HEALTH_CHECKER_PERIOD = 300; // seconds
 
     public static LoadBalancerServer getInstance() {
         if (_instance == null) {
@@ -53,10 +53,12 @@ public class LoadBalancerServer {
         server.setExecutor(Executors.newCachedThreadPool());
         server.start();
 
+        gatherAllInstancesTest();
+
         // schedules AutoScaler to execute repeatedly every check period of 1 minute
         ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(2);
         // TODO: keep in mind that the period to shut down a machine is 5 and not 1
-        scheduler.scheduleAtFixedRate(new AutoScaler(), 0, AUTO_SCALER_PERIOD, TimeUnit.MINUTES);
+        scheduler.scheduleAtFixedRate(new AutoScaler(), AUTO_SCALER_DELAY, AUTO_SCALER_PERIOD, TimeUnit.MINUTES);
 
         // schedules Healthcheck to execute repeatedly every check period of 300 seconds
         // TODO: do i need to create a new schedular ?
@@ -113,7 +115,7 @@ public class LoadBalancerServer {
             while (InstanceSelector.getInstance().instancesInitializing() == true) {
                 _logger.info("Waiting for new instances to be initialized!");
                 try {
-                    Thread.sleep(5000); // 5 seconds
+                    Thread.sleep(10000); // 10 seconds
                 }
                 catch(InterruptedException e) {
                     _logger.warning("Failed to wait for instances to initialize");

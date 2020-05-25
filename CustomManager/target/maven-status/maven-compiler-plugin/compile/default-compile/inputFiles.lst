@@ -1,0 +1,15 @@
+/home/daniela/daniela/CNV/new_repo/CNV-A07_Sudoku_Cloud/CustomManager/src/main/java/pt/ulisboa/tecnico/cnv/custommanager/handler/LoadBalancerHandler.java
+/home/daniela/daniela/CNV/new_repo/CNV-A07_Sudoku_Cloud/CustomManager/src/main/java/pt/ulisboa/tecnico/cnv/custommanager/service/SendMessages.java
+/home/daniela/daniela/CNV/new_repo/CNV-A07_Sudoku_Cloud/CustomManager/src/main/java/pt/ulisboa/tecnico/cnv/custommanager/server/LoadBalancerServer.java
+/home/daniela/daniela/CNV/new_repo/CNV-A07_Sudoku_Cloud/CustomManager/src/main/java/pt/ulisboa/tecnico/cnv/custommanager/service/RequestCostEstimator.java
+/home/daniela/daniela/CNV/new_repo/CNV-A07_Sudoku_Cloud/CustomManager/src/main/java/pt/ulisboa/tecnico/cnv/custommanager/domain/Request.java
+/home/daniela/daniela/CNV/new_repo/CNV-A07_Sudoku_Cloud/CustomManager/src/main/java/pt/ulisboa/tecnico/cnv/custommanager/service/RequestTracker.java
+/home/daniela/daniela/CNV/new_repo/CNV-A07_Sudoku_Cloud/CustomManager/src/main/java/pt/ulisboa/tecnico/cnv/custommanager/domain/MultipleLinearRegressionFitter.java
+/home/daniela/daniela/CNV/new_repo/CNV-A07_Sudoku_Cloud/CustomManager/src/main/java/pt/ulisboa/tecnico/cnv/custommanager/service/HealthChecker.java
+/home/daniela/daniela/CNV/new_repo/CNV-A07_Sudoku_Cloud/CustomManager/src/main/java/pt/ulisboa/tecnico/cnv/custommanager/domain/RunningInstanceState.java
+/home/daniela/daniela/CNV/new_repo/CNV-A07_Sudoku_Cloud/CustomManager/src/main/java/pt/ulisboa/tecnico/cnv/custommanager/service/InstanceSelector.java
+/home/daniela/daniela/CNV/new_repo/CNV-A07_Sudoku_Cloud/CustomManager/src/main/java/pt/ulisboa/tecnico/cnv/custommanager/domain/RequestCost.java
+/home/daniela/daniela/CNV/new_repo/CNV-A07_Sudoku_Cloud/CustomManager/src/main/java/pt/ulisboa/tecnico/cnv/custommanager/service/AutoScaler.java
+/home/daniela/daniela/CNV/new_repo/CNV-A07_Sudoku_Cloud/CustomManager/src/main/java/pt/ulisboa/tecnico/cnv/custommanager/domain/PuzzleAlgorithmProperty.java
+/home/daniela/daniela/CNV/new_repo/CNV-A07_Sudoku_Cloud/CustomManager/src/main/java/pt/ulisboa/tecnico/cnv/custommanager/service/RequestCostCache.java
+/home/daniela/daniela/CNV/new_repo/CNV-A07_Sudoku_Cloud/CustomManager/src/main/java/pt/ulisboa/tecnico/cnv/custommanager/domain/RequestState.java
