@@ -113,7 +113,8 @@ public class LoadBalancerServer {
     public static void solutionRequest(String requestUuid, Request request) {
 
         RunningInstanceState instanceState = InstanceSelector.getInstance().selectInstance(request.getCost());
-        if (instanceState == null) {
+	System.out.println(instanceState);       
+ if (instanceState == null) {
             // TODO: see if this can be problematic
             // waits until new instances are initialized
             while (InstanceSelector.getInstance().instancesInitializing() == true) {
@@ -127,6 +128,7 @@ public class LoadBalancerServer {
             }
             instanceState = InstanceSelector.getInstance().selectInstance(request.getCost());
         }
+
         Instance instance = InstanceSelector.getInstance().getInstanceById(instanceState.getInstanceId());
         _logger.info("Selected instance " + instanceState.getInstanceId());
 
@@ -142,15 +144,18 @@ public class LoadBalancerServer {
             _logger.warning(e + " Request could not be processed by instance " +
                     instanceState.getInstanceId() + " . Repeating it...");
            instanceState.removeRequest(requestUuid);
-            solutionRequest(requestUuid, request);
+           solutionRequest(requestUuid, request);
         }
 
         if (response != null) {
 
-            String fields[] = response.split(":");
+           String fields[] = response.split(":");
             String solution = fields[0];
-            Long fieldLoads = Long.parseLong(fields[1]);
-            RequestCost actualCost = new RequestCost(fieldLoads);
+           Long fieldLoads = Long.parseLong(fields[1]);
+	String q = request.getQuery();
+	int puzzleSize = RequestCostEstimator.getInstance().extractPuzzleSize(q);
+
+           RequestCost actualCost = RequestCostEstimator.getInstance().computeParameters(fieldLoads, puzzleSize);
 
             // saves requestCost return by server in the cache
             _cache.put(request.getQuery(), actualCost);

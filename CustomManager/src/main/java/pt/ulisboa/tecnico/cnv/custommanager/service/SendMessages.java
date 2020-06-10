@@ -73,15 +73,18 @@ public class SendMessages {
     }
 
     public static String sendSudokuRequest(
-            Instance instance, String request, byte[] body, int estimatedTime) throws IOException {
-        
+            Instance instance, String request, byte[] body, int estimatedTime) throws IOException {       
         if (instance.getPublicIpAddress() == null) {
             String instanceId = instance.getInstanceId();
             instance = InstanceSelector.getInstance().describeInstances(instanceId);
         }
+System.out.println("BODY");
+	String s = new String(body); 
+System.out.println(s);
 
+	
         String urlString = "http://" + instance.getPublicIpAddress() + ":8000/sudoku?" + request;
-
+		
         return getResponse(sendServerRequest("POST", urlString, body, estimatedTime * 1000 * 2));
     }
 

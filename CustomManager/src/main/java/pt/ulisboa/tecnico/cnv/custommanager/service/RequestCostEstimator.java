@@ -211,6 +211,7 @@ public class RequestCostEstimator {
             cpuFitter.addInstance((double) 1000, (double)6);
             cpuFitter.addInstance((double) 3000, (double)8);
             cpuFitter.addInstance((double) 20000, (double)22);
+
             cpuFitter.addInstance((double) 40000, (double)45);
             cpuFitter.addInstance((double) 70000, (double)60);
             cpuFitter.addInstance((double) 80000, (double)70);

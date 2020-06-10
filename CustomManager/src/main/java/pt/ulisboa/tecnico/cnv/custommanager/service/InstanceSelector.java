@@ -39,7 +39,7 @@ public class InstanceSelector {
     private final int MAX_INSTANCES = 5;
     private final int MIN_INSTANCES = 1;
 
-    private final String WEB_SERVER_AMI = "ami-0d078ba2b9844aef0";
+    private final String WEB_SERVER_AMI = "ami-008492e1b7057d6a6";
 
     private InstanceSelector() {
         init();
@@ -59,7 +59,8 @@ public class InstanceSelector {
         try {
             credentials = new ProfileCredentialsProvider().getCredentials();
         } catch (Exception e) {
-            throw new AmazonClientException(
+           
+ throw new AmazonClientException(
                     "Cannot load the credentials from the credential profiles file. " +
                             "Please make sure that your credentials file is at the correct " +
                             "location (~/.aws/credentials), and is in valid format.",
@@ -198,8 +199,8 @@ public class InstanceSelector {
         runInstancesRequest.withImageId(WEB_SERVER_AMI)
                             .withMinCount(n)
                             .withMaxCount(n)
-                            .withKeyName("CNV-proj")
-                            .withSecurityGroupIds("sg-0bf52fd8f7cb92397")
+                            .withKeyName("CNV-lab-AWS")
+                            .withSecurityGroupIds("sg-02e841af381866185")
                             .withInstanceType("t2.micro");
 
         RunInstancesResult runInstancesResult = _ec2.runInstances(runInstancesRequest);
@@ -353,7 +354,7 @@ public class InstanceSelector {
     // -----            instance to run a request              -----
     // -------------------------------------------------------------
 
-    public synchronized RunningInstanceState selectInstance(RequestCost cost) {
+    public RunningInstanceState selectInstance(RequestCost cost) {
 
         List<RunningInstanceState> instanceStates = selectActiveInstanceStates();
 
@@ -365,9 +366,10 @@ public class InstanceSelector {
         for (RunningInstanceState instanceState : instanceStates) {
             _logger.info(instanceState.getInstanceId() + " ORDERED BY SELECTINSTANCE() " + instanceState.getTotalCpuAvailable());
         }
-
+	
         for (RunningInstanceState instanceState : instanceStates) {
-            // if machine has enough CPU available
+        
+    // if machine has enough CPU available
             // chooses the machine with least cpu available that has enough available cpu to process the request
             if (instanceState.getTotalCpuAvailable() >= cost.getCpuPercentage()) {
                 _logger.info(instanceState.getInstanceId() + " has enough CPU available and was choosen with " + instanceState.getTotalCpuAvailable());
